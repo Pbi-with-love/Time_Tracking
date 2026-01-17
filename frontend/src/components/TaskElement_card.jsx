@@ -19,6 +19,10 @@ import SortableItem from './SortableItem';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
+// id is for frontend dnd-kit usage
+// _id is for backend database usage
+import { normalizeTaskId } from '../utils/NormalizeTaskId';
+
 const TaskElement_card = ({
   tasks,
   tags,
@@ -38,6 +42,7 @@ const TaskElement_card = ({
 
   // Drag and drop
   const [items, setItems] = useState([]);
+
   const sensors = useSensors(useSensor(PointerSensor));
 
   // Make sure user change UI to default or draging
@@ -71,10 +76,7 @@ const TaskElement_card = ({
 
     const storedOrder = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
-    const normalizedTasks = tasks.map(task => ({
-      ...task,
-      id: task._id, // 🔑 thêm id cho DnD
-    }));
+    const normalizedTasks = normalizeTaskId(tasks);
 
     if (storedOrder.length) {
       const orderedTasks = storedOrder
@@ -94,15 +96,19 @@ const TaskElement_card = ({
     if (isDragging || !sortOrder) return;
     const sortTasks = async () => {
       const baseTasks = [...tasks];
+      const normalizedBaseTasks = normalizeTaskId(baseTasks);
 
-      const { earliestTasks, latestTasks } = await getOrderedTasks(baseTasks);
+      const { earliestTasks, latestTasks } = await getOrderedTasks(tasks);
+
+      const normalizedEarliestTasks = normalizeTaskId(earliestTasks);
+      const normalizedLatestTasks = normalizeTaskId(latestTasks);
 
       if (sortOrder === 'Earliest') {
-        setItems(earliestTasks);
+        setItems(normalizedEarliestTasks);
       } else if (sortOrder === 'Latest') {
-        setItems(latestTasks);
+        setItems(normalizedLatestTasks);
       } else if (sortOrder === 'Default') {
-        setItems(baseTasks);
+        setItems(normalizedBaseTasks);
       }
     };
 

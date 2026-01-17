@@ -87,10 +87,11 @@ export const deleteTimestamp = async (timestampId) => {
   }
 };
 
-// Get ordered tasks with earliest and latest activity timestamps
-export const getOrderedTasks = async () => {
+// // Get ordered tasks with earliest and latest activity timestamps
+export const getOrderedTasks = async (tasks) => {
   try {
-    const res = await axios.get(`${API_URL}/orderedtasks`);
+    const ids = tasks.map((t) => t._id).join(',');
+    const res = await axios.get(`${API_URL}/orderedtasks`, { params: { ids } });
     return res.data;
   } catch (error) {
     console.error('Failed to get ordered tasks ', error);

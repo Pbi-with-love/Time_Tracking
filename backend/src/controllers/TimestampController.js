@@ -54,11 +54,11 @@ export const createTimestamp = async (req, res, next) => {
   try {
     const { task, type, timestamp } = req.body;
 
-    const validatedTimestamp = await timestampCreateValidate(
+    const validatedTimestamp = await timestampCreateValidate({
       task,
       type,
       timestamp
-    );
+    });
 
     const newTs = await createTimestampCached(validatedTimestamp);
 
@@ -73,7 +73,7 @@ export const updateTimestamp = async (req, res, next) => {
   try {
     const { task, type, timestamp } = req.body;
 
-    const updatedField = await timestampUpdateValidate(task, type, timestamp);
+    const updatedField = await timestampUpdateValidate({task, type, timestamp});
 
     const updatedTs = await updateTimestampCached(req.params.id, updatedField);
 

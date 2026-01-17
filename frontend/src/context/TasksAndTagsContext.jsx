@@ -18,7 +18,6 @@ const TasksAndTagsContextProvider = ({ children }) => {
         setTasks(tasksData);
         setTags(tagsData);
         setTimestamps(timestampsData);
-        console.log(tasksData, tagsData, timestampsData);
     }
 
     useEffect(() => {

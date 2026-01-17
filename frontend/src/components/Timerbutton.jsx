@@ -36,7 +36,6 @@ const Timerbutton = ({ id, colors, activeTimers, setActiveTimers, toggleStartSto
                         startTime: running ? Date.now() : null
                     }
                 }));
-                console.log(activeTimers)
             } catch (error) {
                 console.error(error);
             }
@@ -70,7 +69,7 @@ const Timerbutton = ({ id, colors, activeTimers, setActiveTimers, toggleStartSto
 
 
             const newTs = await createTimestamps(id, isRunning ? "start" : "end");
-            
+
             setTimestamps(prev => [...prev, newTs]);
             setActiveTimers(prev => ({
                 ...prev,
