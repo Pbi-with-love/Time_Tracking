@@ -21,9 +21,6 @@ app.use(cors());
 // API routes
 app.use('/api', apiRoutes);
 
-// Error handler
-app.use(errorHandler);
-
 // Basic route
 app.get('/', (req, res) => {
   res.send('Welcome to the Time Tracking API');
@@ -32,5 +29,8 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Error handler
+app.use(errorHandler);
 
 export default app;

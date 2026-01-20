@@ -28,7 +28,7 @@ const ShowAllTagsForm = ({ onClose, onSuccess, onError }) => {
                             <Tag size={14} />
                             <p className='ml-1'>{tag.title}</p>
                         </span>
-                        <div className="text-sm text-white">{tag.description || "No description"}</div>
+                        <div className={`text-sm ${tag.description ? 'text-white' : 'text-gray-400 italic'}`}>{tag.description || "No description"}</div>
                         <div className="absolute top-0 right-0">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -55,7 +55,6 @@ const ShowAllTagsForm = ({ onClose, onSuccess, onError }) => {
                 </div>
             ))}
             <div className="self-end translate-x-4 flex gap-3">
-
                 {/* Submit Button */}
                 <button
                     type="submit"

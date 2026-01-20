@@ -16,6 +16,9 @@ const EditTaskForm = ({ onClose, taskId, onSuccess, onError }) => {
 
     // Set state of multiple choice of tags
     const [selectedTags, setSelectedTags] = useState([]);
+    useEffect(() => {
+        console.log("Selected Tags:", selectedTags);
+    }, [selectedTags]);
 
     // Set original task before update
     const [originalTask, setOriginalTask] = useState(null);
@@ -60,8 +63,7 @@ const EditTaskForm = ({ onClose, taskId, onSuccess, onError }) => {
                 description: taskDescription,
                 tags: selectedTags.map(tag => tag._id),
             }
-            const updatedProcess = await updateTask(taskId, updatedFields)
-            const updatedTask = await getTaskById(updatedProcess._id)
+            const updatedTask = await updateTask(taskId, updatedFields)
             setTasks(prev => prev.map(t => t._id === updatedTask._id ? updatedTask : t))
             onSuccess("Task successfully updated!")
 

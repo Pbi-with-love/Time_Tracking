@@ -20,7 +20,6 @@ const DeleteDialog = ({
     const handleDelete = async () => {
         try {
             if (type === "task") {
-
                 const timeForTask = await getTimestampByTaskId(id);
                 await Promise.all([deleteTask(id), ...timeForTask.map(ts => deleteTimestamp(ts._id))]);
 

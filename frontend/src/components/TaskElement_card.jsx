@@ -272,7 +272,7 @@ const TaskElement_card = ({
 
                     {/* Tags section */}
                     <div className="flex gap-2 flex-wrap mb-8">
-                      {task.tags && task.tags.length > 0 ? (
+                      {Array.isArray(task.tags) && task.tags.length > 0 ? (
                         task.tags.map((tagId) => {
                           const tag = tags.find(t => t._id === tagId);
                           if (!tag) return null;

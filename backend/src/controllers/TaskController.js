@@ -37,10 +37,11 @@ export const getTasksByTagId = async (req, res, next) => {
   try {
     const { tagId } = req.params;
     const tasks = await Task.find({
-      tags: mongoose.Types.ObjectId(tagId),
+      tags: new mongoose.Types.ObjectId(tagId),
     }).lean();
     res.status(200).json(tasks);
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };
@@ -49,7 +50,7 @@ export const getTasksByTagId = async (req, res, next) => {
 export const createTask = async (req, res, next) => {
   try {
     const { title, description, tags = [] } = req.body;
-    const tagIds = tags ? tags.map((id) => mongoose.Types.ObjectId(id)) : [];
+    const tagIds = tags ? tags.map((id) => new mongoose.Types.ObjectId(id)) : [];
 
     const newTask = await createTaskCached({
       title,
@@ -67,8 +68,9 @@ export const createTask = async (req, res, next) => {
 export const updateTask = async (req, res, next) => {
   try {
     const { tags, ...rest } = req.body;
+    console.log("tags" , tags);
     const updatedData = tags
-      ? { ...rest, tags: tags.map((id) => mongoose.Types.ObjectId(id)) }
+      ? { ...rest, tags: tags.map((id) => new mongoose.Types.ObjectId(id)) }
       : rest;
     const updatedTask = await updateTaskCached(req.params.id, updatedData);
     if (!updatedTask) {
@@ -77,6 +79,7 @@ export const updateTask = async (req, res, next) => {
     res.status(200).json(updatedTask);
   } catch (err) {
     next(err);
+    console.log(err);
   }
 };
 
