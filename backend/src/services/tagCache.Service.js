@@ -24,6 +24,10 @@ export const getAllTagCached = async () => {
     const ids = JSON.parse(allTagCached);
     const keys = ids.map((id) => tagKey(id));
 
+    if (!ids.length) {
+      return [];
+    }
+
     const cachedTagsRaw = await redis.mGet(keys);
 
     const tagsCache = [];
@@ -38,11 +42,13 @@ export const getAllTagCached = async () => {
     });
 
     if (missingIds.length > 0) {
-      const missingTags = await Tag.find({ _id: { $in: missingIds } }).lean();;
+      const missingTags = await Tag.find({ _id: { $in: missingIds } }).lean();
 
       tagsCache.push(...missingTags);
       await Promise.all(
-        missingTags.map(t => redis.set(tagKey(t._id.toString()), JSON.stringify(t), { EX: 300 }))
+        missingTags.map((t) =>
+          redis.set(tagKey(t._id.toString()), JSON.stringify(t), { EX: 300 })
+        )
       );
     }
 
@@ -62,42 +68,44 @@ export const getAllTagCached = async () => {
 };
 
 export const createTagCached = async (data) => {
-    const newTag = new Tag(data);
-    await newTag.save();
+  const newTag = new Tag(data);
+  await newTag.save();
 
-    const plainTag = newTag.toObject();
+  const plainTag = newTag.toObject();
 
-    // Invalidate cache
-    await redis.del(allTagsKey());
-    await redis.set(tagKey(plainTag._id.toString()), JSON.stringify(plainTag), { EX: 300 });
+  // Invalidate cache
+  await redis.del(allTagsKey());
+  await redis.set(tagKey(plainTag._id.toString()), JSON.stringify(plainTag), {
+    EX: 300,
+  });
 
-    return plainTag;
-}
+  return plainTag;
+};
 
 export const updateTagCached = async (tagId, updatedData) => {
-    const updatedTag = await Tag.findByIdAndUpdate(tagId, updatedData, {
-        new: true,
-        runValidators: true
-    });
+  const updatedTag = await Tag.findByIdAndUpdate(tagId, updatedData, {
+    new: true,
+    runValidators: true,
+  });
 
-    if (!updatedTag) return null;
+  if (!updatedTag) return null;
 
-    const plainTag = updatedTag.toObject();
+  const plainTag = updatedTag.toObject();
 
-    // Invalidate cache
-    await redis.del(allTagsKey());
-    await redis.set(tagKey(tagId), JSON.stringify(plainTag), { EX: 300 });
-    
-    return plainTag;
-}
+  // Invalidate cache
+  await redis.del(allTagsKey());
+  await redis.set(tagKey(tagId), JSON.stringify(plainTag), { EX: 300 });
+
+  return plainTag;
+};
 
 export const deleteTagCached = async (tagId) => {
-    const deletedTag = await Tag.findByIdAndDelete(tagId);
-    if (!deletedTag) return null;
+  const deletedTag = await Tag.findByIdAndDelete(tagId);
+  if (!deletedTag) return null;
 
-    // Invalidate cache
-    await redis.del(tagKey(tagId));
-    await redis.del(allTagsKey());
+  // Invalidate cache
+  await redis.del(tagKey(tagId));
+  await redis.del(allTagsKey());
 
-    return deletedTag;
-}
+  return deletedTag;
+};

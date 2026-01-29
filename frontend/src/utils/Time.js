@@ -17,10 +17,6 @@ export const calculateTotalTime = (tasks, timestamps) => {
       }
     });
 
-    if (startTime) {
-      totalMs += Date.now() - startTime;
-    }
-
     results[task._id] = totalMs;
   });
   return results;

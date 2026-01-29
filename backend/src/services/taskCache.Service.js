@@ -14,7 +14,7 @@ export const getTaskCached = async (taskId) => {
     return null;
   }
   await redis.set(taskKey(taskId), JSON.stringify(task), { EX: 300 });
-  
+
   return task;
 };
 
@@ -30,15 +30,21 @@ export const getAllTasksIDCached = async () => {
 
   await redis.set(allTasksKey(), JSON.stringify(ids), { EX: 300 });
   return ids;
-}
+};
 
 export const getAllTaskCached = async () => {
   const cachedAllTaskId = await redis.get(allTasksKey());
 
   if (cachedAllTaskId) {
+    console.log("hit cache");
     const ids = JSON.parse(cachedAllTaskId);
 
-    const keys = ids.map(id => taskKey(id));
+    const keys = ids.map((id) => taskKey(id));
+
+    if (!ids.length) {
+      return [];
+    }
+
     // Use mGet to fetch multiple keys at once
     const cachedTasksRaw = await redis.mGet(keys);
 
@@ -51,14 +57,16 @@ export const getAllTaskCached = async () => {
       } else {
         missingIds.push(ids[index]);
       }
-    })
+    });
 
     if (missingIds.length > 0) {
       const missingTasks = await Task.find({ _id: { $in: missingIds } }).lean();
 
       tasksCache.push(...missingTasks);
       await Promise.all(
-        missingTasks.map(t => redis.set(taskKey(t._id), JSON.stringify(t), { EX: 300 }))
+        missingTasks.map((t) =>
+          redis.set(taskKey(t._id), JSON.stringify(t), { EX: 300 })
+        )
       );
     }
 
@@ -85,7 +93,9 @@ export const createTaskCached = async (data) => {
 
   // Invalidate all tasks cache
   await redis.del(allTasksKey());
-  await redis.set(taskKey(plainTask._id), JSON.stringify(plainTask), { EX: 300 });
+  await redis.set(taskKey(plainTask._id), JSON.stringify(plainTask), {
+    EX: 300,
+  });
 
   return plainTask;
 };
@@ -103,7 +113,7 @@ export const updateTaskCached = async (taskId, updatedData) => {
   // Invalidate cache
   await redis.del(allTasksKey());
   await redis.set(taskKey(taskId), JSON.stringify(plainTask), { EX: 300 });
-  
+
   return plainTask;
 };
 

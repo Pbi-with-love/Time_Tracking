@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Tag, SquarePen, Trash, Ellipsis } from 'lucide-react';
 import Timerbutton from './Timerbutton';
 import { getOrderedTasks, getTaskAvgStats } from '../api/Timestamps';
@@ -113,7 +113,7 @@ const TaskElement_card = ({
     };
 
     sortTasks();
-  }, [sortOrder, toggleStartStop]);
+  }, [sortOrder]);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -153,6 +153,7 @@ const TaskElement_card = ({
 
   const totalTimes = useMemo(() => calculateTotalTime(tasks, timestamps), [tasks, timestamps]);
 
+
   const getDisplayTime = (taskId) => {
     const timer = activeTimers[taskId];
     if (timer?.running) {
@@ -161,26 +162,18 @@ const TaskElement_card = ({
     return totalTimes[taskId] || 0;
   };
 
-  const lastToggleRef = useRef(0);
-
-  useEffect(() => {
-    lastToggleRef.current = Date.now();
-  }, [toggleStartStop]);
 
   useEffect(() => {
     let animationFrameId;
 
     const updateTimer = () => {
-      const now = Date.now();
 
-      if (now - lastToggleRef.current > 400) {
-        setActiveTimers((prev) => {
-          if (Object.values(prev).some((t) => t.running)) {
-            return { ...prev };
-          }
-          return prev;
-        });
-      }
+      setActiveTimers((prev) => {
+        if (Object.values(prev).some((t) => t.running)) {
+          return { ...prev };
+        }
+        return prev;
+      });
 
       animationFrameId = requestAnimationFrame(updateTimer);
     };

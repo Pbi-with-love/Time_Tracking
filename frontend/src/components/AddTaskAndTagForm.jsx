@@ -30,6 +30,10 @@ const AddTaskAndTagForm = ({ onClose, onSuccess, onError }) => {
         e.preventDefault()
 
         try {
+            if (!taskName.trim()) {
+                onError("Task name cannot be empty!")
+                return;
+            }
             const tagIds = selectedTags.map(tag => tag._id).join(",")
             const newTask = await createTask(taskName, taskDescription, tagIds)
             setTasks(prev => [...prev, newTask]);
@@ -51,6 +55,10 @@ const AddTaskAndTagForm = ({ onClose, onSuccess, onError }) => {
         e.preventDefault()
 
         try {
+            if (!tagName.trim()) {
+                onError("Tag name cannot be empty!")
+                return;
+            }
             const newTag = await createTags(tagName, tagDescription)
             setTags(prev => [...prev, newTag])
             onSuccess("Tag successfully created!")

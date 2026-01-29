@@ -20,6 +20,10 @@ export const getAllTimestampsCached = async () => {
 
   if (allCached) {
     const ids = JSON.parse(allCached);
+    if (!ids.length) {
+      return [];
+    }
+
     const keys = ids.map((id) => timestampKey(id));
     const cachedRaw = await redis.mGet(keys);
 
@@ -34,7 +38,9 @@ export const getAllTimestampsCached = async () => {
     if (missingIds.length > 0) {
       const missingTs = await Timestamp.find({
         _id: { $in: missingIds },
-      }).populate("startRef").lean();
+      })
+        .populate("startRef")
+        .lean();
 
       timestampsCache.push(...missingTs);
       await Promise.all(

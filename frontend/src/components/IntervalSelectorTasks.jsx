@@ -114,12 +114,13 @@ const IntervalSelectorTasks = ({ title, startTime, endTime, totalTimeForInterest
                             <p className="text-center py-8 text-neutral-500 italic">No active tasks in this interval</p>
                         ) : (
                             tasksOfInterest.map((task, idx) => {
+                        
                                 const percentage = totalTimeForInterestTasks ? (task.activeTime / totalTimeForInterestTasks) * 100 : 0
                                 const taskTags = task.tags || [];
                                 const color = task.color || '#06b6d4' // fallback color
 
                                 return (
-                                    <div key={task._id} className="bg-neutral-800 rounded-xl p-5 border border-neutral-700 hover:border-neutral-400 transition-all group">
+                                    <div key={task.id} className="bg-neutral-800 rounded-xl p-5 border border-neutral-700 hover:border-neutral-400 transition-all group">
                                         <div className="flex items-center justify-between mb-5">
                                             <div className="flex items-start gap-4 flex-1">
                                                 <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-neutral-300 font-bold">
@@ -131,11 +132,11 @@ const IntervalSelectorTasks = ({ title, startTime, endTime, totalTimeForInterest
                                                             <h4 className="text-lg font-semibold text-white">{task.title.charAt(0).toUpperCase() + task.title.slice(1)}</h4>
                                                             <div className="flex items-center gap-2 flex-wrap">
                                                                 {taskTags.length > 0 ? (
-                                                                    taskTags.map(tagIdStr => {
+                                                                    taskTags.map((tagIdStr) => {
                                                                         const tagObj = Array.isArray(tags) ? tags.find(t => t._id === tagIdStr) : null;
                                                                         if (!tagObj) return null
                                                                         return (
-                                                                            <Tooltip key={tagObj._id}>
+                                                                            <Tooltip key={tagIdStr}>
                                                                                 <TooltipTrigger asChild>
                                                                                     <span className="px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-teal-300 border border-emerald-500/30 rounded-full text-sm font-medium flex items-center gap-1 cursor-pointer">
                                                                                         <TagIcon size={14} />
