@@ -91,7 +91,7 @@ export const deleteTimestamp = async (timestampId) => {
 export const getOrderedTasks = async (tasks) => {
   try {
     const ids = tasks.map((t) => t._id).join(',');
-    const res = await axios.get(`${API_URL}/orderedtasks`, { params: { ids } });
+    const res = await axios.get(`${API_URL}/tasks/orderedtasks`, { params: { ids } });
     return res.data;
   } catch (error) {
     console.error('Failed to get ordered tasks ', error);
@@ -100,60 +100,75 @@ export const getOrderedTasks = async (tasks) => {
 };
 
 // Filter timestamps by a given period (today, thisWeek, thisMonth, all)
-export const getTimestampsByPeriod = (timestamps, period) => {
-  const now = new Date();
-  let startPeriod = null;
+export const getTimestampsByPeriod = async ({period, startTime, endTime} = {}) => {
+  try {
+    const params = {};
+    
+    if (period) params.period = period;
+    if (startTime) params.startTime = startTime;
+    if (endTime) params.endTime = endTime;
 
-  if (period === 'today') {
-    startPeriod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  } else if (period === 'thisWeek') {
-    const day = now.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    startPeriod = new Date(now);
-    startPeriod.setDate(now.getDate() - diff);
-    startPeriod.setHours(0, 0, 0, 0);
-  } else if (period === 'thisMonth') {
-    startPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
-    startPeriod.setHours(0, 0, 0, 0);
+    const res = await axios.get(`${API_URL}/timestamps/timestampsbyperiod`, { params });
+    return res.data;
+  } catch (error) {
+    console.error('Failed to get timestamps by period ', error);
+    throw error;
   }
+}
+// export const getTimestampsByPeriod = (timestamps, period) => {
+//   const now = new Date();
+//   let startPeriod = null;
 
-  if (!startPeriod || period === 'all') return timestamps;
+//   if (period === 'today') {
+//     startPeriod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+//   } else if (period === 'thisWeek') {
+//     const day = now.getDay();
+//     const diff = day === 0 ? 6 : day - 1;
+//     startPeriod = new Date(now);
+//     startPeriod.setDate(now.getDate() - diff);
+//     startPeriod.setHours(0, 0, 0, 0);
+//   } else if (period === 'thisMonth') {
+//     startPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+//     startPeriod.setHours(0, 0, 0, 0);
+//   }
 
-  const filtered = [];
-  const startTimeMap = {};
+//   if (!startPeriod || period === 'all') return timestamps;
 
-  for (const t of timestamps) {
-    const ts = new Date(t.timestamp);
-    const taskId = t.task;
+//   const filtered = [];
+//   const startTimeMap = {};
 
-    if (t.type === 'start') {
-      if (!startTimeMap[taskId]) startTimeMap[taskId] = ts;
-    } else if (t.type === 'end') {
-      let startTime = startTimeMap[taskId] || startPeriod;
+//   for (const t of timestamps) {
+//     const ts = new Date(t.timestamp);
+//     const taskId = t.task;
 
-      const endTime = ts > now ? now : ts;
+//     if (t.type === 'start') {
+//       if (!startTimeMap[taskId]) startTimeMap[taskId] = ts;
+//     } else if (t.type === 'end') {
+//       let startTime = startTimeMap[taskId] || startPeriod;
 
-      if (endTime >= startPeriod) {
-        if (startTime < startPeriod) startTime = startPeriod;
+//       const endTime = ts > now ? now : ts;
 
-        filtered.push({ type: 0, timestamp: startTime.toISOString(), task: taskId });
-        filtered.push({ type: 1, timestamp: endTime.toISOString(), task: taskId });
-      }
+//       if (endTime >= startPeriod) {
+//         if (startTime < startPeriod) startTime = startPeriod;
 
-      delete startTimeMap[taskId];
-    }
-  }
+//         filtered.push({ type: 0, timestamp: startTime.toISOString(), task: taskId });
+//         filtered.push({ type: 1, timestamp: endTime.toISOString(), task: taskId });
+//       }
 
-  for (const taskId in startTimeMap) {
-    let startTime = startTimeMap[taskId];
-    if (startTime < startPeriod) startTime = startPeriod;
+//       delete startTimeMap[taskId];
+//     }
+//   }
 
-    filtered.push({ type: 0, timestamp: startTime.toISOString(), task: taskId });
-    filtered.push({ type: 1, timestamp: now.toISOString(), task: taskId });
-  }
+//   for (const taskId in startTimeMap) {
+//     let startTime = startTimeMap[taskId];
+//     if (startTime < startPeriod) startTime = startPeriod;
 
-  return filtered;
-};
+//     filtered.push({ type: 0, timestamp: startTime.toISOString(), task: taskId });
+//     filtered.push({ type: 1, timestamp: now.toISOString(), task: taskId });
+//   }
+
+//   return filtered;
+// };
 
 // Calculate total active time for a task within a period
 export const totalTimeActiveForEachTask = async (taskId, period) => {
@@ -161,7 +176,7 @@ export const totalTimeActiveForEachTask = async (taskId, period) => {
     const res = await axios.get(`${API_URL}/timesfortask/${taskId}`);
     let timestamps = res.data;
 
-    timestamps = getTimestampsByPeriod(timestamps, period);
+    timestamps = await getTimestampsByPeriod(period);
     timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     let total = 0;
@@ -204,7 +219,7 @@ export const totalTimeActiveForAllTask = async (period) => {
 export const totalTimeActiveForEachTaskDaily = async (taskId, period) => {
   try {
     const res = await axios.get(`${API_URL}/timesfortask/${taskId}`);
-    const timestamps = getTimestampsByPeriod(res.data, period).sort(
+    const timestamps = (await getTimestampsByPeriod(period)).sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
     );
 
@@ -317,7 +332,7 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
 
     for (const task of tasks) {
       const res = await axios.get(`${API_URL}/timesfortask/${task._id}`);
-      let timestamps = getTimestampsByPeriod(res.data, 'today');
+      let timestamps = await getTimestampsByPeriod('today');
 
       timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
@@ -393,7 +408,7 @@ export const totalTimeActiveForEachTag = async (period) => {
       for (const task of tasksOfTag) {
         const total = await totalTimeActiveForEachTask(task._id, period);
         const res = await axios.get(`${API_URL}/timesfortask/${task._id}`);
-        const tss = getTimestampsByPeriod(res.data, period);
+        const tss = await getTimestampsByPeriod(period);
 
         let startTime = null;
         for (const t of tss) {
@@ -433,7 +448,7 @@ export const getMostProductive = async (period) => {
 
   try {
     const res = await axios.get(`${API_URL}/timestamps`);
-    const allTimestamps = getTimestampsByPeriod(res.data, period);
+    const allTimestamps = await getTimestampsByPeriod(period);
 
     const dayMap = {};
     const startTimeMap = {};
@@ -472,7 +487,7 @@ export const getMostProductive = async (period) => {
 export const getMostActiveStreak = async (period) => {
   try {
     const res = await axios.get(`${API_URL}/timestamps`);
-    const allTimestamps = getTimestampsByPeriod(res.data, period);
+    const allTimestamps = await getTimestampsByPeriod(period);
 
     const taskMap = {};
     for (const t of allTimestamps) {
@@ -520,8 +535,7 @@ export const getMostActiveStreak = async (period) => {
 // Get total number of task starts and average tasks started per day in a period
 export const getMostActiveTimes = async (period) => {
   try {
-    const res = await axios.get(`${API_URL}/timestamps`);
-    let allTimestamps = getTimestampsByPeriod(res.data, period);
+    let allTimestamps = await getTimestampsByPeriod(period);
 
     const totalActiveStarts = allTimestamps.filter((t) => t.type === 'start').length;
 

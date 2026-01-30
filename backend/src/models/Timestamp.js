@@ -15,5 +15,6 @@ const timestampSchema = new mongoose.Schema(
 );
 
 timestampSchema.index({ task: 1, timestamp: -1 });
+timestampSchema.index({ startTime: 1, endTime: 1 });
 
 export default mongoose.model("Timestamp", timestampSchema);

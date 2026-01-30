@@ -6,7 +6,6 @@ export const getOrderedTasks = async (req, res, next) => {
   try {
     const taskIds = req.query.ids.split(",");
     
-    console.log("Fetched task IDs:", taskIds);
     const objectIdTaskIds = taskIds.map(
       (id) => new mongoose.Types.ObjectId(id)
     );
@@ -122,6 +121,7 @@ export const getOrderedTasks = async (req, res, next) => {
 
     res.status(200).json({ earliestTasks, latestTasks });
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };

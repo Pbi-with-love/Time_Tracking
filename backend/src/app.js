@@ -1,6 +1,6 @@
 import express from 'express';
 import connectDB from './config/db.js';
-import apiRoutes from './api/api.js';
+import apiRoutes from './routes/index.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { errorHandler } from "./middlewares/errorHandler.js"
