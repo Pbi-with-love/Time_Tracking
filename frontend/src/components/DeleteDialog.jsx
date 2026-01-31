@@ -33,10 +33,10 @@ const DeleteDialog = ({
                 setTasks(prev =>
                     prev.map(task => {
                         const tagsArray = task.tags ? [...task.tags] : [];
-                        const newTagsArray = tagsArray.filter(t => t !== id);
-                        return { ...task, tags: newTagsArray.join(",") };
+                        const newTagsArray = tagsArray.filter(t => t.toString() !== id);
+                        return { ...task, tags: newTagsArray };
                     })
-                )
+                );
                 const storageKeys = Object.keys(localStorage).filter(key => key.startsWith("taskOrder_tag_"));
                 storageKeys.forEach(key => {
                     const tagIdsInKey = key.replace("taskOrder_tag_", "").split("_").map(Number);
