@@ -1,5 +1,16 @@
 import Timestamp from "../models/Timestamp.js";
-import { getTimestampCached } from "./timestampCache.Service.js";
+
+import {
+  accumulateDailyTime,
+  sumTimestampDurations,
+} from "../utils/timestampAggregation.js";
+
+import {
+  getTimestampCached,
+  getTimestampsCachedByMultipleIds,
+} from "./timestampCache.Service.js";
+
+import mongoose from "mongoose";
 
 // Retrieve timestamps based on period or custom time range
 export const getTimestampsByPeriod = async ({
@@ -21,13 +32,12 @@ export const getTimestampsByPeriod = async ({
         start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         break;
 
-      case "thisWeek": {
+      case "thisWeek":
         const day = now.getDay() || 7;
         start = new Date(now);
         start.setDate(now.getDate() - day + 1);
         start.setHours(0, 0, 0, 0);
         break;
-      }
 
       case "thisMonth":
         start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -41,11 +51,18 @@ export const getTimestampsByPeriod = async ({
     end = now;
   }
 
+  // Query for timestamps that either start before the end of the period or end after the start of the period
+  // This query will seperate into main problem 3 case: start before start and end after end, start before start and end befroe start, start after start and end after start
+  // tsStart -- start --- end --- tsEnd, tsStart -- tsEnd -- start -- -- end, start --- tsStart --- end --- tsEnd
+  // The problems become when if you have a start ts valid, but you dont know if it has a end ts or not, if it has end ts and that end ts is not exist in the
+  // result of the query, then you will need to remove this start because this start-end pair is not in range (startTs endTs start end)
+  // The other case is if you have a start ts valid, but it is not end yet (which means it has no end ts), then you can keep this start ts (startTs -- start --- end)
+  // The last case is if you have a end ts valid but the start ts is not valid (not exist in the result of the query), then you need to remove this end ts because this end ts is not in range (start end startTs endTs)
   const query = {
     $or: [
       { type: "end", timestamp: { $gte: start } },
 
-      { type: "start", timestamp: { $lt: end } },
+      { type: "start", timestamp: { $lte: end } },
     ],
   };
 
@@ -58,7 +75,48 @@ export const getTimestampsByPeriod = async ({
     .populate("startRef")
     .lean();
 
-  return { timestamps, start, end };
+  const validStartTimestamps = new Set();
+  const startWithoutEnd = new Set();
+  const filteredTimestamps = [];
+  for (const t of timestamps) {
+    if (t.type === "start") {
+      startWithoutEnd.add(t._id.toString());
+      validStartTimestamps.add(t._id.toString());
+      filteredTimestamps.push(t);
+    } else if (t.type === "end" && t.startRef && t.startRef._id) {
+      if (startWithoutEnd.has(t.startRef._id.toString())) {
+        startWithoutEnd.delete(t.startRef._id.toString());
+        filteredTimestamps.push(t);
+      }
+    }
+  }
+
+  if (startWithoutEnd.size > 0) {
+    const ids = [...startWithoutEnd].map(
+      (id) => new mongoose.Types.ObjectId(id),
+    );
+    const alreadyFinishedTimestamp = await Timestamp.find({
+      type: "end",
+      startRef: { $in: ids },
+    }).lean();
+
+    for (const t of alreadyFinishedTimestamp) {
+      if (t.startRef && t.startRef._id) {
+        validStartTimestamps.delete(t.startRef._id.toString());
+      }
+    }
+  }
+
+  const finalTimestamp = filteredTimestamps.filter((t) => {
+    if (t.type === "start" && validStartTimestamps.has(t._id.toString())) {
+      return true;
+    } else if (t.type === "end") {
+      return true;
+    }
+    return false;
+  });
+
+  return { timestamps: finalTimestamp, start, end };
 };
 
 // Calculate total active time for a specific task
@@ -79,31 +137,7 @@ export const totalTimeActiveForEachTask = async ({
     ...timeRange,
   });
 
-  let total = 0;
-
-  const tsWithoutEnd = new Set();
-  for (const t of timestamps) {
-    if (t.type === "start") {
-      tsWithoutEnd.add(t._id.toString());
-    }
-    if (t.type === "end" && t.startRef && t.startRef.timestamp) {
-      tsWithoutEnd.delete(t.startRef._id.toString());
-      let startTs = new Date(
-        t.startRef.timestamp < start ? start : t.startRef.timestamp,
-      );
-      let endTs = new Date(t.timestamp > end ? end : t.timestamp);
-      total += endTs - startTs;
-    }
-  }
-
-  if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampCached([...tsWithoutEnd]);
-
-    for (const ts of unfinishedTimestamps) {
-      let tsTime = new Date(ts.timestamp < start ? start : ts.timestamp);
-      total += end - tsTime;
-    }
-  }
+  const total = await sumTimestampDurations({ timestamps, start, end });
 
   return total;
 };
@@ -124,31 +158,7 @@ export const totalTimeActiveForAllTask = async ({
     ...timeRange,
   });
 
-  let total = 0;
-
-  const tsWithoutEnd = new Set();
-  for (const t of timestamps) {
-    if (t.type === "start") {
-      tsWithoutEnd.add(t._id.toString());
-    }
-    if (t.type === "end" && t.startRef && t.startRef.timestamp) {
-      tsWithoutEnd.delete(t.startRef._id.toString());
-      let startTs = new Date(
-        t.startRef.timestamp < start ? start : t.startRef.timestamp,
-      );
-      let endTs = new Date(t.timestamp > end ? end : t.timestamp);
-      total += endTs - startTs;
-    }
-  }
-
-  if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampCached([...tsWithoutEnd]);
-
-    for (const ts of unfinishedTimestamps) {
-      let tsTime = new Date(ts.timestamp < start ? start : ts.timestamp);
-      total += end - tsTime;
-    }
-  }
+  const total = await sumTimestampDurations({ timestamps, start, end });
 
   return total;
 };
@@ -167,9 +177,36 @@ export const totalTimeActiveForEachTaskDaily = async ({
     endTime,
   });
 
-  const totalPerDay = {};
+  const totalPerDay = await accumulateDailyTime({ timestamps, start, end });
+
+  return totalPerDay;
+};
+
+export const totalTimeActiveForAllTaskDaily = async ({
+  period,
+  startTime,
+  endTime,
+} = {}) => {
+  const { timestamps, start, end } = await getTimestampsByPeriod({
+    period,
+    startTime,
+    endTime,
+  });
+
+  const totalPerDay = await accumulateDailyTime({ timestamps, start, end });
+
+  return totalPerDay;
+};
+
+export const totalTimeActiveForAllTaskPerHour = async () => {
+  const { timestamps, start, end } = await getTimestampsByPeriod({
+    period: "today",
+  });
+
+  const hours = Array.from({ length: 24 }, () => 0);
 
   const tsWithoutEnd = new Set();
+
   for (const t of timestamps) {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
@@ -180,115 +217,113 @@ export const totalTimeActiveForEachTaskDaily = async ({
         t.startRef.timestamp < start ? start : t.startRef.timestamp,
       );
       let endTs = new Date(t.timestamp > end ? end : t.timestamp);
-      let startDay = new Date(
-        startTs.getFullYear(),
-        startTs.getMonth(),
-        startTs.getDate(),
-      );
-      let endDay = new Date(
-        endTs.getFullYear(),
-        endTs.getMonth(),
-        endTs.getDate(),
-      );
 
-      const dayCount = Math.floor((endDay - startDay) / (24 * 60 * 60 * 1000));
+      let current = new Date(startTs);
 
-      if (dayCount === 0) {
-        const dayStr = startTs.toISOString().slice(0, 10);
-        totalPerDay[dayStr] = (totalPerDay[dayStr] || 0) + (endTs - startTs);
-      } else {
-        // first day
-        const firstDayStr = startTs.toISOString().slice(0, 10);
-        const firstDayEnd = new Date(startDay.getTime() + 24 * 60 * 60 * 1000);
-        totalPerDay[firstDayStr] =
-          (totalPerDay[firstDayStr] || 0) + (firstDayEnd - startTs);
+      while (current < endTs) {
+        const hourIndex = current.getHours();
+        const nextHour = new Date(current);
+        nextHour.setHours(hourIndex + 1, 0, 0, 0);
 
-        // middle days
-        for (let i = 1; i < dayCount; i++) {
-          const midDay = new Date(startDay.getTime() + i * 24 * 60 * 60 * 1000);
-          const midDayStr = midDay.toISOString().slice(0, 10);
-          totalPerDay[midDayStr] = 24 * 60 * 60 * 1000;
-        }
+        const intervalEnd = nextHour < endTs ? nextHour : endTs;
 
-        // last day
-        const lastDayStr = endTs.toISOString().slice(0, 10);
-        const lastDayStart = new Date(endDay.getTime());
-        totalPerDay[lastDayStr] =
-          (totalPerDay[lastDayStr] || 0) + (endTs - lastDayStart);
+        hours[hourIndex] += intervalEnd - current;
+
+        current = intervalEnd;
       }
     }
   }
 
   if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampCached([...tsWithoutEnd]);
+    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([
+      ...tsWithoutEnd,
+    ]);
 
     for (const ts of unfinishedTimestamps) {
-      let startTs = new Date(
-        t.startRef.timestamp < start ? start : t.startRef.timestamp,
-      );
-      let endTs = end;
+      let tsTime = new Date(ts.timestamp < start ? start : ts.timestamp);
+      let current = new Date(tsTime);
 
-      let startDay = new Date(
-        startTs.getFullYear(),
-        startTs.getMonth(),
-        startTs.getDate(),
-      );
-      let endDay = new Date(
-        endTs.getFullYear(),
-        endTs.getMonth(),
-        endTs.getDate(),
-      );
+      while (current < end) {
+        const hourIndex = current.getHours();
+        const nextHour = new Date(current);
+        nextHour.setHours(hourIndex + 1, 0, 0, 0);
 
-      const dayCount = Math.floor((endDay - startDay) / (24 * 60 * 60 * 1000));
+        const intervalEnd = nextHour < end ? nextHour : end;
 
-      if (dayCount === 0) {
-        const dayStr = startTs.toISOString().slice(0, 10);
-        totalPerDay[dayStr] = (totalPerDay[dayStr] || 0) + (endTs - startTs);
-      } else {
-        // first day
-        const firstDayStr = startTs.toISOString().slice(0, 10);
-        const firstDayEnd = new Date(startDay.getTime() + 24 * 60 * 60 * 1000);
-        totalPerDay[firstDayStr] =
-          (totalPerDay[firstDayStr] || 0) + (firstDayEnd - startTs);
-
-        // middle days
-        for (let i = 1; i < dayCount; i++) {
-          const midDay = new Date(startDay.getTime() + i * 24 * 60 * 60 * 1000);
-          const midDayStr = midDay.toISOString().slice(0, 10);
-          totalPerDay[midDayStr] = 24 * 60 * 60 * 1000;
-        }
-
-        // last day
-        const lastDayStr = endTs.toISOString().slice(0, 10);
-        const lastDayStart = new Date(endDay.getTime());
-        totalPerDay[lastDayStr] =
-          (totalPerDay[lastDayStr] || 0) + (endTs - lastDayStart);
+        hours[hourIndex] += intervalEnd - current;
+        current = intervalEnd;
       }
     }
   }
 
-  return totalPerDay;
+  return hours;
 };
 
-export const totalTimeActiveForAllTaskDaily = async ({
-  period,
-  startTime,
-  endTime,
-} = {}) => {};
+// // Calculate total active time per hour for all tasks today
+// export const totalTimeActiveForAllTaskPerHour = async () => {
+//   try {
+//     const tasks = await getAllTasks();
+//     const hours = Array.from({ length: 24 }, () => 0);
 
-// // Calculate total active time per day for all tasks
-// export const totalTimeActiveForAllTaskDaily = async (period) => {
-//   const tasks = await getAllTasks();
-//   const dailyTimes = await Promise.all(
-//     tasks.map((task) => totalTimeActiveForEachTaskDaily(task._id, period)),
-//   );
+//     const now = new Date();
+//     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-//   const totalPerDay = {};
-//   dailyTimes.forEach((taskDaily) => {
-//     Object.entries(taskDaily).forEach(([date, ms]) => {
-//       totalPerDay[date] = (totalPerDay[date] || 0) + ms;
-//     });
-//   });
+//     for (const task of tasks) {
+//       const res = await axios.get(`${API_URL}/timesfortask/${task._id}`);
+//       const timestamps = await getTimestampsByPeriod({ period: 'today' });
 
-//   return totalPerDay;
+//       timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+//       let startTime = null;
+
+//       for (const t of timestamps) {
+//         if (t.type === 'start') {
+//           startTime = new Date(t.timestamp);
+//         } else if (t.type === 'end' && startTime) {
+//           let endTime = new Date(t.timestamp);
+
+//           if (startTime < startOfDay) startTime = startOfDay;
+//           if (endTime > now) endTime = now;
+
+//           let current = new Date(startTime)
+
+//           while (current < endTime) {
+//             const hourIndex = current.getHours();
+//             const nextHour = new Date(current);
+//             nextHour.setHours(hourIndex + 1, 0, 0, 0);
+
+//             const intervalEnd = endTime < nextHour ? endTime : nextHour;
+
+//             hours[hourIndex] += intervalEnd - current;
+
+//             current = intervalEnd;
+//           }
+
+//           startTime = null;
+//         }
+//       }
+
+//       if (startTime) {
+//         let endTime = now;
+//         let current = new Date(startTime);
+
+//         while (current < endTime) {
+//           const hourIndex = current.getHours();
+//           const nextHour = new Date(current);
+//           nextHour.setHours(hourIndex + 1, 0, 0, 0);
+
+//           const intervalEnd = endTime < nextHour ? endTime : nextHour;
+
+//           hours[hourIndex] += intervalEnd - current;
+
+//           current = intervalEnd;
+//         }
+//       }
+//     }
+
+//     return hours;
+//   } catch (error) {
+//     console.error('Failed to get total time per hour ', error);
+//     throw error;
+//   }
 // };

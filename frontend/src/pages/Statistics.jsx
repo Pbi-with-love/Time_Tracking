@@ -99,7 +99,7 @@ const Statistics = () => {
             hours: ms / (1000 * 60 * 60)
           }));
         } else {
-          const perDay = await totalTimeActiveForAllTaskDaily(periodOption.functionInput);
+          const perDay = await totalTimeActiveForAllTaskDaily({period: periodOption.functionInput});
           dailyActivityData = Object.entries(perDay)
             .sort((a, b) => new Date(a[0]) - new Date(b[0]))
             .map(([date, ms]) => ({
@@ -116,7 +116,7 @@ const Statistics = () => {
           streak = await getMostActiveStreak("today");
           activeTimes = await getMostActiveTimes("today");
         } else {
-          total = await totalTimeActiveForAllTask(periodOption.functionInput);
+          total = await totalTimeActiveForAllTask({period: periodOption.functionInput});
           productive = await getMostProductive(periodOption.functionInput);
           streak = await getMostActiveStreak(periodOption.functionInput);
           activeTimes = await getMostActiveTimes(periodOption.functionInput);

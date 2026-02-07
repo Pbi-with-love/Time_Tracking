@@ -64,6 +64,8 @@ export const createTimestamp = async (req, res, next) => {
 
     res.status(201).json(newTs);
   } catch (err) {
+    console.log("Error in createTimestamp controller:", err);
+    console.log("Request body:", req.body);
     next(err);
   }
 };

@@ -155,6 +155,7 @@ export const totalTimeActiveForAllTask = async ({ period, startTime, endTime } =
   }
 };
 
+
 // Calculate total active time per day for a specific task
 export const totalTimeActiveForEachTaskDaily = async ({
   taskId,
@@ -183,21 +184,16 @@ export const totalTimeActiveForEachTaskDaily = async ({
 // Calculate total active time per day for all tasks
 export const totalTimeActiveForAllTaskDaily = async ({ period, startTime, endTime } = {}) => {
   try {
-    const tasks = await getAllTasks();
-    const dailyTimes = await Promise.all(
-      tasks.map((task) => totalTimeActiveForEachTaskDaily({taskId: task._id, period})),
-    );
+    const params = {};
 
-    console.log('dailyTimes', dailyTimes);
+    if (period) params.period = period;
+    if (startTime) params.startTime = startTime;
+    if (endTime) params.endTime = endTime;
 
-    const totalPerDay = {};
-    dailyTimes.forEach((taskDaily) => {
-      Object.entries(taskDaily).forEach(([date, ms]) => {
-        totalPerDay[date] = (totalPerDay[date] || 0) + ms;
-      });
+    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltasksdaily`, {
+      params,
     });
-
-    return totalPerDay;
+    return res.data.totalTimePerDay;
   } catch (error) {
     console.error('Failed to get total time per day for all tasks ', error);
     throw error;
@@ -207,65 +203,8 @@ export const totalTimeActiveForAllTaskDaily = async ({ period, startTime, endTim
 // Calculate total active time per hour for all tasks today
 export const totalTimeActiveForAllTaskPerHour = async () => {
   try {
-    const tasks = await getAllTasks();
-    const hours = Array.from({ length: 24 }, () => 0);
-
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    for (const task of tasks) {
-      const res = await axios.get(`${API_URL}/timesfortask/${task._id}`);
-      const { timestamps } = await getTimestampsByPeriod({ period: 'today' });
-
-      timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-      let startTime = null;
-
-      for (const t of timestamps) {
-        if (t.type === 'start') {
-          startTime = new Date(t.timestamp);
-        } else if (t.type === 'end' && startTime) {
-          let endTime = new Date(t.timestamp);
-
-          if (startTime < startOfDay) startTime = startOfDay;
-          if (endTime > now) endTime = now;
-
-          let current = new Date(startTime);
-
-          while (current < endTime) {
-            const hourIndex = current.getHours();
-            const nextHour = new Date(current);
-            nextHour.setHours(hourIndex + 1, 0, 0, 0);
-
-            const intervalEnd = endTime < nextHour ? endTime : nextHour;
-
-            hours[hourIndex] += intervalEnd - current;
-
-            current = intervalEnd;
-          }
-
-          startTime = null;
-        }
-      }
-
-      if (startTime) {
-        let endTime = now;
-        let current = new Date(startTime);
-
-        while (current < endTime) {
-          const hourIndex = current.getHours();
-          const nextHour = new Date(current);
-          nextHour.setHours(hourIndex + 1, 0, 0, 0);
-
-          const intervalEnd = endTime < nextHour ? endTime : nextHour;
-
-          hours[hourIndex] += intervalEnd - current;
-
-          current = intervalEnd;
-        }
-      }
-    }
-
+    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltasksperhour`);
+    const hours = res.data.hours;
     return hours;
   } catch (error) {
     console.error('Failed to get total time per hour ', error);
@@ -289,8 +228,7 @@ export const totalTimeActiveForEachTag = async (period) => {
       for (const task of tasksOfTag) {
         const total = await totalTimeActiveForEachTask(task._id, period);
         const res = await axios.get(`${API_URL}/timesfortask/${task._id}`);
-        const { timestamps } = await getTimestampsByPeriod({ period: 'today' });
-        const tss = timestamps;
+        const tss = await getTimestampsByPeriod({ period: 'today' });
 
         let startTime = null;
         for (const t of tss) {
@@ -330,8 +268,7 @@ export const getMostProductive = async (period) => {
 
   try {
     const res = await axios.get(`${API_URL}/timestamps`);
-    const { timestamps } = await getTimestampsByPeriod({ period });
-    const allTimestamps = timestamps;
+    const allTimestamps = await getTimestampsByPeriod({ period });
 
     const dayMap = {};
     const startTimeMap = {};
@@ -370,8 +307,8 @@ export const getMostProductive = async (period) => {
 export const getMostActiveStreak = async (period) => {
   try {
     const res = await axios.get(`${API_URL}/timestamps`);
-    const { timestamps } = await getTimestampsByPeriod({ period });
-    const allTimestamps = timestamps;
+    const allTimestamps = await getTimestampsByPeriod({ period });
+
 
     const taskMap = {};
     for (const t of allTimestamps) {
@@ -419,8 +356,7 @@ export const getMostActiveStreak = async (period) => {
 // Get total number of task starts and average tasks started per day in a period
 export const getMostActiveTimes = async (period) => {
   try {
-    const { timestamps } = await getTimestampsByPeriod({ period });
-    let allTimestamps = timestamps;
+    const allTimestamps = await getTimestampsByPeriod({ period });
 
     const totalActiveStarts = allTimestamps.filter((t) => t.type === 'start').length;
 

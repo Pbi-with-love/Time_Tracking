@@ -14,6 +14,40 @@ export const getTimestampCached = async (tsId) => {
   return ts;
 };
 
+// Get multiple timestamps cached
+export const getTimestampsCachedByMultipleIds = async (tsIds) => {
+  if (tsIds.length === 0) return [];
+  const res = [];
+  const missingIds = [];
+
+  const keys = tsIds.map((id) => timestampKey(id));
+  const cachedRaw = await redis.mGet(keys);
+
+  cachedRaw.forEach((cache, index) => {
+    if (cache) res.push(JSON.parse(cache));
+    else missingIds.push(tsIds[index]);
+  });
+  
+  if (missingIds.length > 0) {
+    const missingTs = await Timestamp.find({
+      _id: { $in: missingIds },
+    })
+      .populate("startRef")
+      .lean();
+
+    res.push(...missingTs);
+    await Promise.all(
+      missingTs.map((ts) =>
+        redis.set(timestampKey(ts._id.toString()), JSON.stringify(ts), {
+          EX: 300,
+        })
+      )
+    );
+  }
+
+  return res;
+};
+
 // GET all timestamps cached
 export const getAllTimestampsCached = async () => {
   const allCached = await redis.get(allTimestampsKey());

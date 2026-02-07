@@ -4,12 +4,16 @@ import { useState } from 'react'
 import { createTimestamps, getTimestampById, getTimestampByTaskId } from '../api/Timestamps'
 import { TasksAndTagsContext } from '../context/TasksAndTagsContext'
 import { SettingsContext } from '../context/SettingsContext'
+import { useRef } from "react";
+
 const Timerbutton = ({ id, colors, activeTimers, setActiveTimers, toggleStartStop, setToggleStartStop }) => {
 
     const { setTimestamps, fetchData } = useContext(TasksAndTagsContext);
 
     const { alternative } = useContext(SettingsContext);
 
+    // Prevent boucing
+    const lastToggleTimeRef = useRef({});
     useEffect(() => {
         const checkActiveTimer = async () => {
             try {
@@ -45,6 +49,14 @@ const Timerbutton = ({ id, colors, activeTimers, setActiveTimers, toggleStartSto
     }, []);
 
     const toggleTimer = async (id) => {
+        const now = Date.now();
+        const lastTime = lastToggleTimeRef.current[id] || 0;
+
+        if (now - lastTime < 200) {
+            return;
+        }
+
+        lastToggleTimeRef.current[id] = now;
         setToggleStartStop(!toggleStartStop);
         const prevTimer = activeTimers[id] || { running: false, startTime: null };
         const isRunning = !prevTimer.running;

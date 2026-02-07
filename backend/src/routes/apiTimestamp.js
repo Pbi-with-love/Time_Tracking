@@ -11,6 +11,8 @@ import {
   handleTotalTimeActiveForEachTask,
   handleTotalTimeActiveForAllTask,
   handleTotalTimeActiveForEachTasksDaily,
+  handleTotalTimeActiveForAllTasksDaily,
+  handleTotalTimeActiveForAllTasksPerHour
 } from "../controllers/HandlePeriod.js";
 
 const router = express.Router();
@@ -28,6 +30,18 @@ router.get("/totaltimeactiveforalltask", handleTotalTimeActiveForAllTask);
 router.get(
   "/totaltimeactiveforeachtasksdaily",
   handleTotalTimeActiveForEachTasksDaily
+);
+
+// --- Period-based total active time for all tasks daily ---
+router.get(
+  "/totaltimeactiveforalltasksdaily",
+  handleTotalTimeActiveForAllTasksDaily
+);
+
+// --- Period-based total active time for all tasks per hour ---
+router.get(
+  "/totaltimeactiveforalltasksperhour",
+  handleTotalTimeActiveForAllTasksPerHour
 );
 
 // --- Timestamp routes ---
