@@ -10,6 +10,8 @@ import {
   getTimestampsCachedByMultipleIds,
 } from "./timestampCache.Service.js";
 
+import { getTasksCachedByMultipleIds } from "./taskCache.Service.js";
+
 import mongoose from "mongoose";
 
 // Retrieve timestamps based on period or custom time range
@@ -52,7 +54,7 @@ export const getTimestampsByPeriod = async ({
   }
 
   // Query for timestamps that either start before the end of the period or end after the start of the period
-  // This query will seperate into main problem 3 case: start before start and end after end, start before start and end befroe start, start after start and end after start
+  // This query will seperate into main problem 3 case: start before start and end after end, start before start and end before start, start after start and end after start
   // tsStart -- start --- end --- tsEnd, tsStart -- tsEnd -- start -- -- end, start --- tsStart --- end --- tsEnd
   // The problems become when if you have a start ts valid, but you dont know if it has a end ts or not, if it has end ts and that end ts is not exist in the
   // result of the query, then you will need to remove this start because this start-end pair is not in range (startTs endTs start end)
@@ -137,9 +139,9 @@ export const totalTimeActiveForEachTask = async ({
     ...timeRange,
   });
 
-  const total = await sumTimestampDurations({ timestamps, start, end });
+  const { total, taskTotalsTs } = await sumTimestampDurations({ timestamps, start, end });
 
-  return total;
+  return { total, taskTotalsTs };
 };
 
 // Calculate total active time for all tasks
@@ -158,9 +160,9 @@ export const totalTimeActiveForAllTask = async ({
     ...timeRange,
   });
 
-  const total = await sumTimestampDurations({ timestamps, start, end });
-
-  return total;
+  const { total, taskTotalsTs } = await sumTimestampDurations({ timestamps, start, end });
+  console.log("total", total);
+  return { total, taskTotalsTs };
 };
 
 // Calculate total active time for each day for a specific task
@@ -236,7 +238,7 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
 
   if (tsWithoutEnd.size > 0) {
     const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([
-      ...tsWithoutEnd,
+      ...tsWithoutEnd
     ]);
 
     for (const ts of unfinishedTimestamps) {
@@ -259,71 +261,185 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
   return hours;
 };
 
-// // Calculate total active time per hour for all tasks today
-// export const totalTimeActiveForAllTaskPerHour = async () => {
+// Calculate total active time for each tag
+export const totalTimeActiveForEachTag = async ({period, startTime, endTime} = {}) => {
+  const { taskTotalsTs } = await totalTimeActiveForAllTask({
+    period,
+    startTime,
+    endTime,
+  });
+
+  console.log('taskTotalsTs: ', taskTotalsTs);
+
+  const taskIds = Object.keys(taskTotalsTs);
+  const tasks = await getTasksCachedByMultipleIds([...taskIds]);
+  const tagTotals = {};
+
+  for (const task of tasks) {
+    const totalTime = taskTotalsTs[task._id.toString()] || 0;
+
+    for (const tagId of task.tags) {
+      tagTotals[tagId.toString()] = (tagTotals[tagId.toString()] || 0) + totalTime;
+    }
+  }
+
+  return tagTotals;
+};
+
+// Get the day with the most completed tasks in a period
+export const getMostProductive = async ({period, startTime, endTime}) => {
+  if (period === 'today') return { day: null, count: 0 };
+
+  const { timestamps } = await getTimestampsByPeriod({
+    period,
+    startTime,
+    endTime,
+  });
+
+  const dayMap = {};
+  const tsWithoutEnd = new Set();
+
+  for (const t of timestamps) {
+    const ts = new Date(t.timestamp);
+    const dayKey = ts.toISOString().split('T')[0];
+
+    if (!dayMap[dayKey]) dayMap[dayKey] = 0;
+    
+    if (t.type === "start") {
+      tsWithoutEnd.add(t._id.toString());
+    } else if (t.type === "end" && t.startRef && t.startRef.timestamp) {
+      tsWithoutEnd.delete(t.startRef._id.toString());
+      dayMap[dayKey] += 1;
+    }
+  }
+
+  const [dayKey, count] = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+
+  if (!dayKey) return { day: null, count: 0 }
+
+  const dateObj = new Date(dayKey);
+  const dayFormatted = dateObj.toLocaleDateString('en-GB');
+  const weekday = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+
+  return { day: dayFormatted, weekday, count }; 
+}
+
+
+
+// // Get the day with the most completed tasks in a period
+// export const getMostProductive = async (period) => {
+//   if (period === 'today') return { day: null, count: 0 };
+
 //   try {
-//     const tasks = await getAllTasks();
-//     const hours = Array.from({ length: 24 }, () => 0);
+//     const res = await axios.get(`${API_URL}/timestamps`);
+//     const allTimestamps = await getTimestampsByPeriod({ period });
 
-//     const now = new Date();
-//     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+//     const dayMap = {};
+//     const startTimeMap = {};
 
-//     for (const task of tasks) {
-//       const res = await axios.get(`${API_URL}/timesfortask/${task._id}`);
-//       const timestamps = await getTimestampsByPeriod({ period: 'today' });
+//     for (const t of allTimestamps) {
+//       const ts = new Date(t.timestamp);
+//       const taskId = t.task;
+//       const dayKey = ts.toISOString().split('T')[0];
 
-//       timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+//       if (!dayMap[dayKey]) dayMap[dayKey] = 0;
+
+//       if (t.type === 'start') {
+//         startTimeMap[taskId] = ts;
+//       } else if (t.type === 'end' && startTimeMap[taskId]) {
+//         dayMap[dayKey] += 1;
+//         delete startTimeMap[taskId];
+//       }
+//     }
+
+//     const mostDayEntry = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+
+//     if (!mostDayEntry[0]) return { day: null, count: 0 };
+
+//     const dateObj = new Date(mostDayEntry[0]);
+//     const dayFormatted = dateObj.toLocaleDateString('en-GB');
+//     const weekday = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+
+//     return { day: dayFormatted, weekday, count: mostDayEntry[1] };
+//   } catch (error) {
+//     console.error('Failed to get most productive ', error);
+//     throw error;
+//   }
+// };
+
+// // Calculate the longest continuous active streak for any task in a period
+// export const getMostActiveStreak = async (period) => {
+//   try {
+//     const res = await axios.get(`${API_URL}/timestamps`);
+//     const allTimestamps = await getTimestampsByPeriod({ period });
+
+
+//     const taskMap = {};
+//     for (const t of allTimestamps) {
+//       if (!taskMap[t.task]) taskMap[t.task] = [];
+//       taskMap[t.task].push(t);
+//     }
+
+//     let maxStreak = 0;
+
+//     for (const taskId in taskMap) {
+//       const timestamps = taskMap[taskId].sort(
+//         (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+//       );
 
 //       let startTime = null;
 
 //       for (const t of timestamps) {
+//         const ts = new Date(t.timestamp);
+
 //         if (t.type === 'start') {
-//           startTime = new Date(t.timestamp);
+//           startTime = ts;
 //         } else if (t.type === 'end' && startTime) {
-//           let endTime = new Date(t.timestamp);
-
-//           if (startTime < startOfDay) startTime = startOfDay;
-//           if (endTime > now) endTime = now;
-
-//           let current = new Date(startTime)
-
-//           while (current < endTime) {
-//             const hourIndex = current.getHours();
-//             const nextHour = new Date(current);
-//             nextHour.setHours(hourIndex + 1, 0, 0, 0);
-
-//             const intervalEnd = endTime < nextHour ? endTime : nextHour;
-
-//             hours[hourIndex] += intervalEnd - current;
-
-//             current = intervalEnd;
-//           }
-
+//           const streak = ts - startTime;
+//           if (streak > maxStreak) maxStreak = streak;
 //           startTime = null;
 //         }
 //       }
 
 //       if (startTime) {
-//         let endTime = now;
-//         let current = new Date(startTime);
-
-//         while (current < endTime) {
-//           const hourIndex = current.getHours();
-//           const nextHour = new Date(current);
-//           nextHour.setHours(hourIndex + 1, 0, 0, 0);
-
-//           const intervalEnd = endTime < nextHour ? endTime : nextHour;
-
-//           hours[hourIndex] += intervalEnd - current;
-
-//           current = intervalEnd;
+//         const now = new Date();
+//         if (startTime <= now) {
+//           const streak = now - startTime;
+//           if (streak > maxStreak) maxStreak = streak;
 //         }
 //       }
 //     }
 
-//     return hours;
+//     return maxStreak;
 //   } catch (error) {
-//     console.error('Failed to get total time per hour ', error);
+//     console.error('Failed to get most active streak ', error);
+//     throw error;
+//   }
+// };
+
+// // Get total number of task starts and average tasks started per day in a period
+// export const getMostActiveTimes = async (period) => {
+//   try {
+//     const allTimestamps = await getTimestampsByPeriod({ period });
+
+//     const totalActiveStarts = allTimestamps.filter((t) => t.type === 'start').length;
+
+//     const activePerDay = {};
+//     allTimestamps.forEach((t) => {
+//       if (t.type === 'start') {
+//         const day = new Date(t.timestamp).toISOString().slice(0, 10);
+//         if (!activePerDay[day]) activePerDay[day] = new Set();
+//         activePerDay[day].add(t.task);
+//       }
+//     });
+
+//     const days = Object.keys(activePerDay).length;
+//     const avgTasksPerDay =
+//       days > 0 ? Object.values(activePerDay).reduce((sum, set) => sum + set.size, 0) / days : 0;
+
+//     return { totalActiveStarts, avgTasksPerDay };
+//   } catch (error) {
+//     console.error('Failed to get most active times ', error);
 //     throw error;
 //   }
 // };

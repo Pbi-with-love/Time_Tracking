@@ -18,6 +18,38 @@ export const getTaskCached = async (taskId) => {
   return task;
 };
 
+export const getTasksCachedByMultipleIds = async (taskIds) => {
+  if (taskIds.length === 0) return [];
+
+  const res = [];
+  const missingIds = [];
+
+  const key = taskIds.map((id) => taskKey(id));
+  const cachedRaw = await redis.mGet(key);
+
+  cachedRaw.forEach((cache, index) => {
+    if (cache) res.push(JSON.parse(cache));
+    else missingIds.push(taskIds[index]);
+  })
+
+  if (missingIds.length > 0) {
+    const missingTasks = await Task.find({
+      _id: { $in: missingIds },
+    }).lean();
+
+    res.push(...missingTasks);
+    await Promise.all(
+      missingTasks.map((t) => {
+        redis.set(taskKey(t._id.toString()), JSON.stringify(t), {
+          EX: 300
+        })
+      })
+    )
+  }
+
+  return res;
+};
+
 export const getAllTasksIDCached = async () => {
   const cachedAllTaskId = await redis.get(allTasksKey());
 

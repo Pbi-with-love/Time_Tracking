@@ -145,7 +145,8 @@ export const totalTimeActiveForAllTask = async ({ period, startTime, endTime } =
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforeachtask`, {
+
+    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltask`, {
       params,
     });
     return res.data.totalTime;
@@ -213,47 +214,16 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
 };
 
 // Calculate total active time for each tag
-export const totalTimeActiveForEachTag = async (period) => {
+export const totalTimeActiveForEachTag = async ({period, startTime, endTime}) => {
   try {
-    const [tags, tasks] = await Promise.all([getAllTags(), getAllTasks()]);
-    const tagTotals = {};
+     const params = {};
 
-    for (const tag of tags) {
-      tagTotals[tag._id] = 0;
+    if (period) params.period = period;
+    if (startTime) params.startTime = startTime;
+    if (endTime) params.endTime = endTime;
 
-      const tasksOfTag = tasks.filter((task) => task.tags.some((tid) => tid === tag._id));
-
-      let intervals = [];
-
-      for (const task of tasksOfTag) {
-        const total = await totalTimeActiveForEachTask(task._id, period);
-        const res = await axios.get(`${API_URL}/timesfortask/${task._id}`);
-        const tss = await getTimestampsByPeriod({ period: 'today' });
-
-        let startTime = null;
-        for (const t of tss) {
-          const ts = new Date(t.timestamp).getTime();
-          if (t.type === 'start') startTime = ts;
-          else if (t.type === 'end' && startTime !== null) {
-            intervals.push([startTime, ts]);
-            startTime = null;
-          }
-        }
-        if (startTime !== null) intervals.push([startTime, Date.now()]);
-      }
-
-      intervals.sort((a, b) => a[0] - b[0]);
-      const merged = [];
-      for (const interval of intervals) {
-        if (!merged.length || merged[merged.length - 1][1] < interval[0]) {
-          merged.push(interval);
-        } else {
-          merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], interval[1]);
-        }
-      }
-
-      tagTotals[tag._id] = merged.reduce((acc, [start, end]) => acc + (end - start), 0);
-    }
+    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforeachtag`, { params });
+    const tagTotals = res.data.tagTotals;
 
     return tagTotals;
   } catch (error) {
@@ -267,36 +237,10 @@ export const getMostProductive = async (period) => {
   if (period === 'today') return { day: null, count: 0 };
 
   try {
-    const res = await axios.get(`${API_URL}/timestamps`);
-    const allTimestamps = await getTimestampsByPeriod({ period });
+    const res = await axios.get(`${API_URL}/timestamps/mostproductiveday/`);
+    const { day, weekday, count } = res.data.mostProductiveDay;
 
-    const dayMap = {};
-    const startTimeMap = {};
-
-    for (const t of allTimestamps) {
-      const ts = new Date(t.timestamp);
-      const taskId = t.task;
-      const dayKey = ts.toISOString().split('T')[0];
-
-      if (!dayMap[dayKey]) dayMap[dayKey] = 0;
-
-      if (t.type === 'start') {
-        startTimeMap[taskId] = ts;
-      } else if (t.type === 'end' && startTimeMap[taskId]) {
-        dayMap[dayKey] += 1;
-        delete startTimeMap[taskId];
-      }
-    }
-
-    const mostDayEntry = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0] || [null, 0];
-
-    if (!mostDayEntry[0]) return { day: null, count: 0 };
-
-    const dateObj = new Date(mostDayEntry[0]);
-    const dayFormatted = dateObj.toLocaleDateString('en-GB');
-    const weekday = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
-
-    return { day: dayFormatted, weekday, count: mostDayEntry[1] };
+    return { day, weekday, count };
   } catch (error) {
     console.error('Failed to get most productive ', error);
     throw error;

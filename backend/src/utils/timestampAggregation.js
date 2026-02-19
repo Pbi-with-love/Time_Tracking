@@ -3,6 +3,7 @@ import { getTimestampCached } from "../services/timestampCache.Service.js";
 // Utility functions to aggregate timestamp durations for a specific set of timestamps
 export const sumTimestampDurations = async ({ timestamps, start, end }) => {
   let total = 0;
+  const taskTotalsTs = {};
 
   const tsWithoutEnd = new Set();
   for (const t of timestamps) {
@@ -15,6 +16,8 @@ export const sumTimestampDurations = async ({ timestamps, start, end }) => {
         t.startRef.timestamp < start ? start : t.startRef.timestamp,
       );
       let endTs = new Date(t.timestamp > end ? end : t.timestamp);
+      const taskId = t.task.toString();
+      taskTotalsTs[taskId] = (taskTotalsTs[taskId] || 0) + (endTs - startTs);
       total += endTs - startTs;
     }
   }
@@ -24,11 +27,13 @@ export const sumTimestampDurations = async ({ timestamps, start, end }) => {
 
     for (const ts of unfinishedTimestamps) {
       let tsTime = new Date(ts.timestamp < start ? start : ts.timestamp);
+      const taskId = ts.task.toString();
+      taskTotalsTs[taskId] = (taskTotalsTs[taskId] || 0) + (end - tsTime);
       total += end - tsTime;
     }
   }
 
-  return total;
+  return { total, taskTotalsTs };
 };
 
 

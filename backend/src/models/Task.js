@@ -8,4 +8,6 @@ const taskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+taskSchema.index({ tags: 1 });
+
 export default mongoose.model("Task", taskSchema);

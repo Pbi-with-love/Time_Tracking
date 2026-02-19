@@ -12,7 +12,9 @@ import {
   handleTotalTimeActiveForAllTask,
   handleTotalTimeActiveForEachTasksDaily,
   handleTotalTimeActiveForAllTasksDaily,
-  handleTotalTimeActiveForAllTasksPerHour
+  handleTotalTimeActiveForAllTasksPerHour,
+  handleTotalTimeActiveForEachTag,
+  handleMostProductiveDay
 } from "../controllers/HandlePeriod.js";
 
 const router = express.Router();
@@ -29,20 +31,26 @@ router.get("/totaltimeactiveforalltask", handleTotalTimeActiveForAllTask);
 // --- Period-based total active time for each task daily ---
 router.get(
   "/totaltimeactiveforeachtasksdaily",
-  handleTotalTimeActiveForEachTasksDaily
+  handleTotalTimeActiveForEachTasksDaily,
 );
 
 // --- Period-based total active time for all tasks daily ---
 router.get(
   "/totaltimeactiveforalltasksdaily",
-  handleTotalTimeActiveForAllTasksDaily
+  handleTotalTimeActiveForAllTasksDaily,
 );
 
 // --- Period-based total active time for all tasks per hour ---
 router.get(
   "/totaltimeactiveforalltasksperhour",
-  handleTotalTimeActiveForAllTasksPerHour
+  handleTotalTimeActiveForAllTasksPerHour,
 );
+
+// --- Period-based total active time for each tag ---
+router.get("/totaltimeactiveforeachtag", handleTotalTimeActiveForEachTag);
+
+// --- Period-based: day with the highest number of completed tasks tracked --- 
+router.get("/mostproductiveday", handleMostProductiveDay)
 
 // --- Timestamp routes ---
 router.get("/", getAllTimestamps);

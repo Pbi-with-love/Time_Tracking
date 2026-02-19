@@ -137,7 +137,7 @@ const Statistics = () => {
             value: total,
             icon: Clock,
             bg: "bg-gradient-to-r from-violet-500 via-purple-400 to-pink-300",
-            desc: roundedHours >= 1
+            desc: totalHours >= 1
               ? `Tracking ${roundedHours} ${roundedHours === 1 ? "hour" : "hours"} in this period`
               : "Tracking less than 1 hour in this period"
           },

@@ -3,9 +3,12 @@ import mongoose from "mongoose";
 import {
   getTimestampsByPeriod,
   totalTimeActiveForEachTask,
+  totalTimeActiveForAllTask,
   totalTimeActiveForEachTaskDaily,
   totalTimeActiveForAllTaskDaily,
   totalTimeActiveForAllTaskPerHour,
+  totalTimeActiveForEachTag,
+  getMostProductive
 } from "../services/timestampByPeriod.Service.js";
 import { AppError } from "../utils/AppError.js";
 
@@ -27,14 +30,14 @@ export const handleTotalTimeActiveForEachTask = async (req, res, next) => {
   try {
     const { taskId, period, startTime, endTime } = req.query;
 
-    const totalTime = await totalTimeActiveForEachTask({
+    const { total } = await totalTimeActiveForEachTask({
       taskId,
       period,
       startTime,
       endTime,
     });
 
-    res.status(200).json({ totalTime });
+    res.status(200).json({ totalTime: total });
   } catch (err) {
     next(err);
   }
@@ -44,13 +47,13 @@ export const handleTotalTimeActiveForAllTask = async (req, res, next) => {
   try {
     const { period, startTime, endTime } = req.query;
 
-    const totalTime = await totalTimeActiveForEachTask({
+    const { total } = await totalTimeActiveForAllTask({
       period,
       startTime,
       endTime,
     });
 
-    res.status(200).json({ totalTime });
+    res.status(200).json({ totalTime: total });
   } catch (err) {
     next(err);
   }
@@ -102,3 +105,26 @@ export const handleTotalTimeActiveForAllTasksPerHour = async (req, res, next) =>
     next(err);
   }
 };
+
+export const handleTotalTimeActiveForEachTag = async (req, res, next) => {
+  try {
+    const { period, startTime, endTime } = req.query;
+
+    const tagTotals = await totalTimeActiveForEachTag({period, startTime, endTime});
+
+    res.status(200).json({tagTotals})
+  } catch (err) {
+    next(err);
+  }
+}
+
+export const handleMostProductiveDay = async (req, res, next) => {
+  try {
+    const { period, startTime, endTime } = req.query;
+
+    const mostProductiveDay = await getMostProductive({period, startTime, endTime});
+    res.status(200).json({ mostProductiveDay })
+  } catch (err) {
+    next(err)
+  }
+}
