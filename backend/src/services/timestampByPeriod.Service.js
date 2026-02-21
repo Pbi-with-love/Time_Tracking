@@ -52,14 +52,15 @@ export const getTimestampsByPeriod = async ({
 
     end = now;
   }
-
-  // Query for timestamps that either start before the end of the period or end after the start of the period
-  // This query will seperate into main problem 3 case: start before start and end after end, start before start and end before start, start after start and end after start
-  // tsStart -- start --- end --- tsEnd, tsStart -- tsEnd -- start -- -- end, start --- tsStart --- end --- tsEnd
-  // The problems become when if you have a start ts valid, but you dont know if it has a end ts or not, if it has end ts and that end ts is not exist in the
-  // result of the query, then you will need to remove this start because this start-end pair is not in range (startTs endTs start end)
-  // The other case is if you have a start ts valid, but it is not end yet (which means it has no end ts), then you can keep this start ts (startTs -- start --- end)
-  // The last case is if you have a end ts valid but the start ts is not valid (not exist in the result of the query), then you need to remove this end ts because this end ts is not in range (start end startTs endTs)
+  /**
+   * Query for timestamps that either start before the end of the period or end after the start of the period
+   * This query will seperate into main problem 3 case: start before start and end after end, start before start and end before start, start after start and end after start
+   *  tsStart -- start --- end --- tsEnd, tsStart -- tsEnd -- start -- -- end, start --- tsStart --- end --- tsEnd
+   * The problems become when if you have a start ts valid, but you dont know if it has a end ts or not, if it has end ts and that end ts is not exist in the
+   * result of the query, then you will need to remove this start because this start-end pair is not in range (startTs endTs start end)
+   * The other case is if you have a start ts valid, but it is not end yet (which means it has no end ts), then you can keep this start ts (startTs -- start --- end)
+   * The last case is if you have a end ts valid but the start ts is not valid (not exist in the result of the query), then you need to remove this end ts because this end ts is not in range (start end startTs endTs)
+   */
   const query = {
     $or: [
       { type: "end", timestamp: { $gte: start } },
@@ -139,7 +140,11 @@ export const totalTimeActiveForEachTask = async ({
     ...timeRange,
   });
 
-  const { total, taskTotalsTs } = await sumTimestampDurations({ timestamps, start, end });
+  const { total, taskTotalsTs } = await sumTimestampDurations({
+    timestamps,
+    start,
+    end,
+  });
 
   return { total, taskTotalsTs };
 };
@@ -160,8 +165,11 @@ export const totalTimeActiveForAllTask = async ({
     ...timeRange,
   });
 
-  const { total, taskTotalsTs } = await sumTimestampDurations({ timestamps, start, end });
-  console.log("total", total);
+  const { total, taskTotalsTs } = await sumTimestampDurations({
+    timestamps,
+    start,
+    end,
+  });
   return { total, taskTotalsTs };
 };
 
@@ -213,7 +221,7 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
     }
-    if (t.type === "end" && t.startRef && t.startRef.timestamp) {
+    if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       let startTs = new Date(
         t.startRef.timestamp < start ? start : t.startRef.timestamp,
@@ -238,7 +246,7 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
 
   if (tsWithoutEnd.size > 0) {
     const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([
-      ...tsWithoutEnd
+      ...tsWithoutEnd,
     ]);
 
     for (const ts of unfinishedTimestamps) {
@@ -262,14 +270,16 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
 };
 
 // Calculate total active time for each tag
-export const totalTimeActiveForEachTag = async ({period, startTime, endTime} = {}) => {
+export const totalTimeActiveForEachTag = async ({
+  period,
+  startTime,
+  endTime,
+} = {}) => {
   const { taskTotalsTs } = await totalTimeActiveForAllTask({
     period,
     startTime,
     endTime,
   });
-
-  console.log('taskTotalsTs: ', taskTotalsTs);
 
   const taskIds = Object.keys(taskTotalsTs);
   const tasks = await getTasksCachedByMultipleIds([...taskIds]);
@@ -279,7 +289,8 @@ export const totalTimeActiveForEachTag = async ({period, startTime, endTime} = {
     const totalTime = taskTotalsTs[task._id.toString()] || 0;
 
     for (const tagId of task.tags) {
-      tagTotals[tagId.toString()] = (tagTotals[tagId.toString()] || 0) + totalTime;
+      tagTotals[tagId.toString()] =
+        (tagTotals[tagId.toString()] || 0) + totalTime;
     }
   }
 
@@ -287,8 +298,8 @@ export const totalTimeActiveForEachTag = async ({period, startTime, endTime} = {
 };
 
 // Get the day with the most completed tasks in a period
-export const getMostProductive = async ({period, startTime, endTime}) => {
-  if (period === 'today') return { day: null, count: 0 };
+export const getMostProductive = async ({ period, startTime, endTime }) => {
+  if (period === "today") return { day: null, count: 0 };
 
   const { timestamps } = await getTimestampsByPeriod({
     period,
@@ -301,78 +312,101 @@ export const getMostProductive = async ({period, startTime, endTime}) => {
 
   for (const t of timestamps) {
     const ts = new Date(t.timestamp);
-    const dayKey = ts.toISOString().split('T')[0];
+    const dayKey = ts.toISOString().split("T")[0];
 
     if (!dayMap[dayKey]) dayMap[dayKey] = 0;
-    
+
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
-    } else if (t.type === "end" && t.startRef && t.startRef.timestamp) {
+    } else if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       dayMap[dayKey] += 1;
     }
   }
 
-  const [dayKey, count] = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+  // I just increse one when there is a valid end exist, so dont need to handle task without end in this function
+  const [dayKey, count] = Object.entries(dayMap).sort(
+    (a, b) => b[1] - a[1],
+  )[0] || [null, 0];
 
-  if (!dayKey) return { day: null, count: 0 }
+  if (!dayKey) return { day: null, count: 0 };
 
   const dateObj = new Date(dayKey);
-  const dayFormatted = dateObj.toLocaleDateString('en-GB');
-  const weekday = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+  const dayFormatted = dateObj.toLocaleDateString("en-GB");
+  const weekday = dateObj.toLocaleDateString("en-GB", { weekday: "long" });
 
-  return { day: dayFormatted, weekday, count }; 
-}
+  return { day: dayFormatted, weekday, count };
+};
 
 
+/**
+ * This function returns the longest time streak during which at least one task is active.
+ * The algorithm used in this function: the first ts with type start will be assigned its timestamp to the variable streakStart
+ * Because I don't need to care the second, third,... ts type start, only when the streak is end, I just need to take final TS - startStreak to calculate the time streak
+ * S1 -> S2 -> S3 -> E1 -> E3 -> E2 => time range = E2 - S1
+ * Next I need to know when a streak is stopped, it will stop when all the start ts in current streak match will all end Ts in timestamps array
+ * Which means in this streak there is no more task is active => Calculate currStreak, compare maxStreak => Start new Streak if this streak is not a final one
+ * Create variable active when there is a start ts it will increase by one, and with end Ts it will decrease by one -> when active == 0 the current streak is end
+ * currentStreakTasks is a set use to track how many task have been activated during this streak by storing all the ts type start.
+ * For example S1 -> S2 -> S3 -> E1 -> E3 -> E2 have 3 startTs which means the number of task active in this streak is currentStreakTasks.size == 3
+ */
+export const getMostActiveStreak = async ({ period, startTime, endTime }) => {
+  const { timestamps, start, end } = await getTimestampsByPeriod({
+    period,
+    startTime,
+    endTime,
+  });
 
-// // Get the day with the most completed tasks in a period
-// export const getMostProductive = async (period) => {
-//   if (period === 'today') return { day: null, count: 0 };
+  let maxStreak = 0;
+  let streak = 0;
+  let currentStreakTasks = new Set();
+  let maxTotalTaskActiveDuringStreak = 0;
+  let active = 0;
+  let streakStart = null;
 
-//   try {
-//     const res = await axios.get(`${API_URL}/timestamps`);
-//     const allTimestamps = await getTimestampsByPeriod({ period });
+  for (const t of timestamps) {
+    if (t.type === "start") {
+      if (active === 0) {
+        streakStart = new Date(t.timestamp < start ? start : t.timestamp);
+        /**
+         * Reset the task set at the start of a new streak.
+         * We do this here rather than when maxStreak is found,
+         * so tasks from previous streaks are not carried over.
+         */
+        currentStreakTasks.clear();
+      }
+      active++;
+      currentStreakTasks.add(t._id.toString());
+    } else if (t.type === "end" && t.startRef && t.startRef._id) {
+      active = Math.max(0, active - 1);
+      if (active == 0 && streakStart) {
+        const endTs = new Date(t.timestamp > end ? end : t.timestamp);
+        streak = endTs - streakStart;
+        if (streak > maxStreak) {
+          maxStreak = streak;
+          maxTotalTaskActiveDuringStreak = currentStreakTasks.size;
+        }
+        streakStart = null;
+      }
+    }
+  }
 
-//     const dayMap = {};
-//     const startTimeMap = {};
+  if (active > 0 && streakStart) {
+    streak = end - streakStart;
+    if (streak > maxStreak) {
+      maxStreak = streak;
+      maxTotalTaskActiveDuringStreak = currentStreakTasks.size;
+    }
+  }
 
-//     for (const t of allTimestamps) {
-//       const ts = new Date(t.timestamp);
-//       const taskId = t.task;
-//       const dayKey = ts.toISOString().split('T')[0];
-
-//       if (!dayMap[dayKey]) dayMap[dayKey] = 0;
-
-//       if (t.type === 'start') {
-//         startTimeMap[taskId] = ts;
-//       } else if (t.type === 'end' && startTimeMap[taskId]) {
-//         dayMap[dayKey] += 1;
-//         delete startTimeMap[taskId];
-//       }
-//     }
-
-//     const mostDayEntry = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0] || [null, 0];
-
-//     if (!mostDayEntry[0]) return { day: null, count: 0 };
-
-//     const dateObj = new Date(mostDayEntry[0]);
-//     const dayFormatted = dateObj.toLocaleDateString('en-GB');
-//     const weekday = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
-
-//     return { day: dayFormatted, weekday, count: mostDayEntry[1] };
-//   } catch (error) {
-//     console.error('Failed to get most productive ', error);
-//     throw error;
-//   }
-// };
+  return { maxStreak, maxTotalTaskActiveDuringStreak };
+};
 
 // // Calculate the longest continuous active streak for any task in a period
 // export const getMostActiveStreak = async (period) => {
 //   try {
 //     const res = await axios.get(`${API_URL}/timestamps`);
 //     const allTimestamps = await getTimestampsByPeriod({ period });
-
 
 //     const taskMap = {};
 //     for (const t of allTimestamps) {

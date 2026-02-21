@@ -216,7 +216,7 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
 // Calculate total active time for each tag
 export const totalTimeActiveForEachTag = async ({period, startTime, endTime}) => {
   try {
-     const params = {};
+    const params = {};
 
     if (period) params.period = period;
     if (startTime) params.startTime = startTime;
@@ -233,11 +233,17 @@ export const totalTimeActiveForEachTag = async ({period, startTime, endTime}) =>
 };
 
 // Get the day with the most completed tasks in a period
-export const getMostProductive = async (period) => {
+export const getMostProductive = async ({period, startTime, endTime}) => {
   if (period === 'today') return { day: null, count: 0 };
 
   try {
-    const res = await axios.get(`${API_URL}/timestamps/mostproductiveday/`);
+    const params = {};
+
+    if (period) params.period = period;
+    if (startTime) params.startTime = startTime;
+    if (endTime) params.endTime = endTime;
+
+    const res = await axios.get(`${API_URL}/timestamps/mostproductiveday`, { params });
     const { day, weekday, count } = res.data.mostProductiveDay;
 
     return { day, weekday, count };
@@ -248,49 +254,18 @@ export const getMostProductive = async (period) => {
 };
 
 // Calculate the longest continuous active streak for any task in a period
-export const getMostActiveStreak = async (period) => {
+export const getMostActiveStreak = async ({period, startTime, endTime}) => {
   try {
-    const res = await axios.get(`${API_URL}/timestamps`);
-    const allTimestamps = await getTimestampsByPeriod({ period });
+    const params = {};
 
+    if (period) params.period = period;
+    if (startTime) params.startTime = startTime;
+    if (endTime) params.endTime = endTime;
 
-    const taskMap = {};
-    for (const t of allTimestamps) {
-      if (!taskMap[t.task]) taskMap[t.task] = [];
-      taskMap[t.task].push(t);
-    }
+    const res = await axios.get(`${API_URL}/timestamps/mostactivestreak`, { params });
+    const { maxStreak, maxTotalTaskActiveDuringStreak } = res.data.mostActiveStreak;
 
-    let maxStreak = 0;
-
-    for (const taskId in taskMap) {
-      const timestamps = taskMap[taskId].sort(
-        (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
-      );
-
-      let startTime = null;
-
-      for (const t of timestamps) {
-        const ts = new Date(t.timestamp);
-
-        if (t.type === 'start') {
-          startTime = ts;
-        } else if (t.type === 'end' && startTime) {
-          const streak = ts - startTime;
-          if (streak > maxStreak) maxStreak = streak;
-          startTime = null;
-        }
-      }
-
-      if (startTime) {
-        const now = new Date();
-        if (startTime <= now) {
-          const streak = now - startTime;
-          if (streak > maxStreak) maxStreak = streak;
-        }
-      }
-    }
-
-    return maxStreak;
+    return { maxStreak, maxTotalTaskActiveDuringStreak };
   } catch (error) {
     console.error('Failed to get most active streak ', error);
     throw error;

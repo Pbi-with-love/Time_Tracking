@@ -10,7 +10,7 @@ export const sumTimestampDurations = async ({ timestamps, start, end }) => {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
     }
-    if (t.type === "end" && t.startRef && t.startRef.timestamp) {
+    if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       let startTs = new Date(
         t.startRef.timestamp < start ? start : t.startRef.timestamp,
@@ -46,7 +46,7 @@ export const accumulateDailyTime = async ({ timestamps, start, end }) => {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
     }
-    if (t.type === "end" && t.startRef && t.startRef.timestamp) {
+    if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       let startTs = new Date(
         t.startRef.timestamp < start ? start : t.startRef.timestamp,

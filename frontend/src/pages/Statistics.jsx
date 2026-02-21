@@ -90,6 +90,8 @@ const Statistics = () => {
       try {
         let total, productive, streak, activeTimes;
 
+        let totalTaskInStreak;
+
         let dailyActivityData = [];
 
         if (periodOption.functionInput === "today") {
@@ -112,14 +114,23 @@ const Statistics = () => {
 
         if (periodOption.functionInput === "today") {
           total = dailyActivityData.reduce((acc, t) => acc + t.hours * 3600000, 0);
-          productive = await getMostProductive("today");
-          streak = await getMostActiveStreak("today");
+          productive = await getMostProductive({ period: "today" });
+
+          const streakData = await getMostActiveStreak({ period: "today" });
+          streak = streakData.maxStreak;
+          totalTaskInStreak = streakData.maxTotalTaskActiveDuringStreak;
+
           activeTimes = await getMostActiveTimes("today");
         } else {
           total = await totalTimeActiveForAllTask({period: periodOption.functionInput});
-          productive = await getMostProductive(periodOption.functionInput);
-          streak = await getMostActiveStreak(periodOption.functionInput);
+          productive = await getMostProductive({period: periodOption.functionInput});
+
+          const streakData = await getMostActiveStreak({period: periodOption.functionInput});
+          streak = streakData.maxStreak;
+          totalTaskInStreak = streakData.maxTotalTaskActiveDuringStreak;
+
           activeTimes = await getMostActiveTimes(periodOption.functionInput);
+
         }
 
         const mostProductiveValue =
@@ -156,13 +167,7 @@ const Statistics = () => {
             icon: TrendingUp,
             bg: "bg-gradient-to-br from-pink-500 to-red-400",
             desc:
-              "Consistent pace for " +
-              (Math.floor(streak / (1000 * 60 * 60 * 24)) >= 1
-                ? `${Math.floor(streak / (1000 * 60 * 60 * 24))} ${Math.floor(streak / (1000 * 60 * 60 * 24)) === 1 ? "day" : "days"
-                }`
-                : `${(Math.floor(streak / (1000 * 60)) / 60).toFixed(2)} ${Math.floor(streak / (1000 * 60 * 60)) >= 1 ? "hour" : "hours"
-                }
-                `)
+              `${totalTaskInStreak} tasks during streak`
           },
           {
             name: "Total Tasks Active",

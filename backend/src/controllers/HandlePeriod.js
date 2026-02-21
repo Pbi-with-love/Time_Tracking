@@ -8,7 +8,8 @@ import {
   totalTimeActiveForAllTaskDaily,
   totalTimeActiveForAllTaskPerHour,
   totalTimeActiveForEachTag,
-  getMostProductive
+  getMostProductive,
+  getMostActiveStreak
 } from "../services/timestampByPeriod.Service.js";
 import { AppError } from "../utils/AppError.js";
 
@@ -124,6 +125,17 @@ export const handleMostProductiveDay = async (req, res, next) => {
 
     const mostProductiveDay = await getMostProductive({period, startTime, endTime});
     res.status(200).json({ mostProductiveDay })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const handleMostActiveStreak = async (req, res, next) => {
+  try {
+    const { period, startTime, endTime } = req.query;
+
+    const mostActiveStreak = await getMostActiveStreak({period, startTime, endTime});
+    res.status(200).json({ mostActiveStreak })
   } catch (err) {
     next(err)
   }
