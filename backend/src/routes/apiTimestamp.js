@@ -15,7 +15,8 @@ import {
   handleTotalTimeActiveForAllTasksPerHour,
   handleTotalTimeActiveForEachTag,
   handleMostProductiveDay,
-  handleMostActiveStreak
+  handleMostActiveStreak,
+  handleTaskStartStats
 } from "../controllers/HandlePeriod.js";
 
 const router = express.Router();
@@ -55,6 +56,9 @@ router.get("/mostproductiveday", handleMostProductiveDay)
 
 // --- Period-based: longest time that having at least 1 task is active
 router.get("/mostactivestreak", handleMostActiveStreak)
+
+// --- Period-based: calculate how many times tasks were started and their daily average
+router.get("/taskstartstats", handleTaskStartStats)
 
 // --- Timestamp routes ---
 router.get("/", getAllTimestamps);

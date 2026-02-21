@@ -19,7 +19,7 @@ import {
   YAxis,
   Bar
 } from "recharts"
-import { totalTimeActiveForAllTask, getMostProductive, getMostActiveStreak, getMostActiveTimes, totalTimeActiveForEachTag, totalTimeActiveForAllTaskPerHour, totalTimeActiveForAllTaskDaily, getTaskDailyBarChart } from '../api/Timestamps'
+import { totalTimeActiveForAllTask, getMostProductive, getMostActiveStreak, getTaskStartStats, totalTimeActiveForEachTag, totalTimeActiveForAllTaskPerHour, totalTimeActiveForAllTaskDaily, getTaskDailyBarChart } from '../api/Timestamps'
 import { formattedTime } from '../utils/Time'
 import { IntervalContext } from '../context/IntervalContext'
 import Alert from '../components/Alert'
@@ -120,7 +120,7 @@ const Statistics = () => {
           streak = streakData.maxStreak;
           totalTaskInStreak = streakData.maxTotalTaskActiveDuringStreak;
 
-          activeTimes = await getMostActiveTimes("today");
+          activeTimes = await getTaskStartStats({ period: "today" });
         } else {
           total = await totalTimeActiveForAllTask({period: periodOption.functionInput});
           productive = await getMostProductive({period: periodOption.functionInput});
@@ -129,7 +129,7 @@ const Statistics = () => {
           streak = streakData.maxStreak;
           totalTaskInStreak = streakData.maxTotalTaskActiveDuringStreak;
 
-          activeTimes = await getMostActiveTimes(periodOption.functionInput);
+          activeTimes = await getTaskStartStats({period: periodOption.functionInput});
 
         }
 
@@ -167,7 +167,7 @@ const Statistics = () => {
             icon: TrendingUp,
             bg: "bg-gradient-to-br from-pink-500 to-red-400",
             desc:
-              `${totalTaskInStreak} tasks during streak`
+              `${totalTaskInStreak} tasks active during the longest streak`
           },
           {
             name: "Total Tasks Active",

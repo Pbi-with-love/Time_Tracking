@@ -402,54 +402,33 @@ export const getMostActiveStreak = async ({ period, startTime, endTime }) => {
   return { maxStreak, maxTotalTaskActiveDuringStreak };
 };
 
-// // Calculate the longest continuous active streak for any task in a period
-// export const getMostActiveStreak = async (period) => {
-//   try {
-//     const res = await axios.get(`${API_URL}/timestamps`);
-//     const allTimestamps = await getTimestampsByPeriod({ period });
+export const getTaskStartStats = async ({ period, startTime, endTime }) => {
+  const { timestamps, start, end } = await getTimestampsByPeriod({
+    period,
+    startTime,
+    endTime,
+  });
 
-//     const taskMap = {};
-//     for (const t of allTimestamps) {
-//       if (!taskMap[t.task]) taskMap[t.task] = [];
-//       taskMap[t.task].push(t);
-//     }
+  let totalActiveStarts = 0;
+  const activePerDay = {};
 
-//     let maxStreak = 0;
+  for (const t of timestamps) {
+    if (t.type === "start") {
+      totalActiveStarts++;
+      const day = new Date(t.timestamp).toISOString().slice(0, 10);
+      if (!activePerDay[day]) activePerDay[day] = new Set();
+      activePerDay[day].add(t.task);
+    }
+  }
 
-//     for (const taskId in taskMap) {
-//       const timestamps = taskMap[taskId].sort(
-//         (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
-//       );
+  const days = Object.keys(activePerDay).length;
+  const avgTasksPerDay =
+    days > 0 ? Object.values(activePerDay).reduce((sum, set) => sum + set.size, 0) / days : 0;
 
-//       let startTime = null;
 
-//       for (const t of timestamps) {
-//         const ts = new Date(t.timestamp);
+    return { totalActiveStarts, avgTasksPerDay };
+};
 
-//         if (t.type === 'start') {
-//           startTime = ts;
-//         } else if (t.type === 'end' && startTime) {
-//           const streak = ts - startTime;
-//           if (streak > maxStreak) maxStreak = streak;
-//           startTime = null;
-//         }
-//       }
-
-//       if (startTime) {
-//         const now = new Date();
-//         if (startTime <= now) {
-//           const streak = now - startTime;
-//           if (streak > maxStreak) maxStreak = streak;
-//         }
-//       }
-//     }
-
-//     return maxStreak;
-//   } catch (error) {
-//     console.error('Failed to get most active streak ', error);
-//     throw error;
-//   }
-// };
 
 // // Get total number of task starts and average tasks started per day in a period
 // export const getMostActiveTimes = async (period) => {

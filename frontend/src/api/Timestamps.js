@@ -273,25 +273,17 @@ export const getMostActiveStreak = async ({period, startTime, endTime}) => {
 };
 
 // Get total number of task starts and average tasks started per day in a period
-export const getMostActiveTimes = async (period) => {
+export const getTaskStartStats = async ({period, startTime, endTime}) => {
   try {
-    const allTimestamps = await getTimestampsByPeriod({ period });
+    const params = {};
 
-    const totalActiveStarts = allTimestamps.filter((t) => t.type === 'start').length;
+    if (period) params.period = period;
+    if (startTime) params.startTime = startTime;
+    if (endTime) params.endTime = endTime;
 
-    const activePerDay = {};
-    allTimestamps.forEach((t) => {
-      if (t.type === 'start') {
-        const day = new Date(t.timestamp).toISOString().slice(0, 10);
-        if (!activePerDay[day]) activePerDay[day] = new Set();
-        activePerDay[day].add(t.task);
-      }
-    });
-
-    const days = Object.keys(activePerDay).length;
-    const avgTasksPerDay =
-      days > 0 ? Object.values(activePerDay).reduce((sum, set) => sum + set.size, 0) / days : 0;
-
+    const res = await axios.get(`${API_URL}/timestamps/taskstartstats`, { params });
+    const { totalActiveStarts, avgTasksPerDay } = res.data.taskStartStats;
+    
     return { totalActiveStarts, avgTasksPerDay };
   } catch (error) {
     console.error('Failed to get most active times ', error);
