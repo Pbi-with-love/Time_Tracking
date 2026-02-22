@@ -1,6 +1,6 @@
-import redis from "../config/redisClient.js";
-import Tag from "../models/Tag.js";
-import { tagKey, allTagsKey } from "../utils/redisKey.js";
+import redis from "../../config/redisClient.js";
+import Tag from "../../models/Tag.js";
+import { tagKey, allTagsKey } from "../../utils/redisKey.js";
 
 export const getTagCached = async (tagId) => {
   const tagCached = await redis.get(tagKey(tagId));
@@ -16,6 +16,74 @@ export const getTagCached = async (tagId) => {
 
   return tag;
 };
+
+export const getTagsCachedByMultipleIds = async (tagIds) => {
+  if (tagIds.length === 0) return [];
+
+  const missingIds = [];
+  const map = new Map();
+
+  const key = tagIds.map((id) => tagKey(id));
+  const cachedRaw = await redis.mGet(key);
+
+  cachedRaw.forEach((cache, index) => {
+    const id = tagIds[index].toString();
+    if (cache) map.set(id, JSON.parse(cache));
+    else missingIds.push(tagIds[index]);
+  });
+
+  if (missingIds.length > 0) {
+    const missingTags = await Tag.find({
+      _id: { $in: missingIds } 
+    }).lean();
+
+    for (const tag of missingTags) {
+      const id = tag._id.toString();
+      map.set(id, tag);
+    }
+    await Promise.all(
+      missingTags.map((t) => {
+        redis.set(tagKey(t._id.toString()), JSON.stringify(t), {
+          EX: 300
+        })
+      })
+    )
+  }
+
+  return tagIds.map((id) => map.get(id.toString())).filter(Boolean);
+}
+
+// export const getTasksCachedByMultipleIds = async (taskIds) => {
+//   if (taskIds.length === 0) return [];
+
+//   const res = [];
+//   const missingIds = [];
+
+//   const key = taskIds.map((id) => taskKey(id));
+//   const cachedRaw = await redis.mGet(key);
+
+//   cachedRaw.forEach((cache, index) => {
+//     if (cache) res.push(JSON.parse(cache));
+//     else missingIds.push(taskIds[index]);
+//   })
+
+//   if (missingIds.length > 0) {
+//     const missingTasks = await Task.find({
+//       _id: { $in: missingIds },
+//     }).lean();
+
+//     res.push(...missingTasks);
+//     await Promise.all(
+//       missingTasks.map((t) => {
+//         redis.set(taskKey(t._id.toString()), JSON.stringify(t), {
+//           EX: 300
+//         })
+//       })
+//     )
+//   }
+
+//   return res;
+// };
 
 export const getAllTagCached = async () => {
   const allTagCached = await redis.get(allTagsKey());

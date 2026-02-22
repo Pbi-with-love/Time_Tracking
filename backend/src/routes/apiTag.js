@@ -6,8 +6,10 @@ import {
   updateTag,
   deleteTag,
 } from "../controllers/TagController.js";
-
+import { handleTagsOfInterest } from "../controllers/HandlePeriod.js"
 const router = express.Router();
+
+router.get("/tagsofinterest", handleTagsOfInterest)
 
 // --- Tag routes ---
 router.get("/", getAllTags);

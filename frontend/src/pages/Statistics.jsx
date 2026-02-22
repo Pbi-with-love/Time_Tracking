@@ -113,7 +113,7 @@ const Statistics = () => {
         setTimeByTask(dailyActivityData);
 
         if (periodOption.functionInput === "today") {
-          total = dailyActivityData.reduce((acc, t) => acc + t.hours * 3600000, 0);
+          total = await totalTimeActiveForAllTask({period: "today"});
           productive = await getMostProductive({ period: "today" });
 
           const streakData = await getMostActiveStreak({ period: "today" });

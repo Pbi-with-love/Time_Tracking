@@ -1,11 +1,10 @@
-import Tag from "../models/Tag.js";
 import {
   getTagCached,
   getAllTagCached,
   createTagCached,
   updateTagCached,
   deleteTagCached,
-} from "../services/tagCache.Service.js";
+} from "../services/cache/tagCache.Service.js";
 
 // GET all tags
 export const getAllTags = async (req, res) => {

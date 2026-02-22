@@ -6,7 +6,7 @@ import {
   createTimestampCached,
   updateTimestampCached,
   deleteTimestampCached,
-} from "../services/timestampCache.Service.js";
+} from "../services/cache/timestampCache.Service.js";
 import {
   timestampCreateValidate,
   timestampUpdateValidate,

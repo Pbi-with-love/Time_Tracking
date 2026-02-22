@@ -12,6 +12,12 @@ import {
   getMostActiveStreak,
   getTaskStartStats
 } from "../services/timestampByPeriod.Service.js";
+import {
+  getTasksOfInterest
+} from "../services/taskInterval.Service.js"
+import {
+  getTagsOfInterest
+} from "../services/tagInterval.Service.js"
 import { AppError } from "../utils/AppError.js";
 
 export const handleGetTimestampsByPeriod = async (req, res, next) => {
@@ -49,13 +55,13 @@ export const handleTotalTimeActiveForAllTask = async (req, res, next) => {
   try {
     const { period, startTime, endTime } = req.query;
 
-    const { total } = await totalTimeActiveForAllTask({
+    const { total, taskTotalsTs } = await totalTimeActiveForAllTask({
       period,
       startTime,
       endTime,
     });
 
-    res.status(200).json({ totalTime: total });
+    res.status(200).json({ totalTime: total, taskTotalsTs });
   } catch (err) {
     next(err);
   }
@@ -112,7 +118,7 @@ export const handleTotalTimeActiveForEachTag = async (req, res, next) => {
   try {
     const { period, startTime, endTime } = req.query;
 
-    const tagTotals = await totalTimeActiveForEachTag({period, startTime, endTime});
+    const { tagTotals } = await totalTimeActiveForEachTag({period, startTime, endTime});
 
     res.status(200).json({tagTotals})
   } catch (err) {
@@ -148,6 +154,27 @@ export const handleTaskStartStats = async (req, res, next) => {
 
     const taskStartStats = await getTaskStartStats({period, startTime, endTime});
     res.status(200).json({ taskStartStats })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const handleTasksOfInterest = async (req, res, next) => {
+  try {
+    const { start, end } = req.query;
+
+    const taskOfInterest = await getTasksOfInterest({start, end});
+    res.status(200).json({ taskOfInterest })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const handleTagsOfInterest = async (req, res, next) => {
+  try {
+    const { start, end } = req.query;
+    const tagsOfInterest = await getTagsOfInterest({start, end});
+    return res.status(200).json({ tagsOfInterest })
   } catch (err) {
     next(err)
   }

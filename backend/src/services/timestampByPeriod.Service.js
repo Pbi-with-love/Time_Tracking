@@ -8,9 +8,9 @@ import {
 import {
   getTimestampCached,
   getTimestampsCachedByMultipleIds,
-} from "./timestampCache.Service.js";
+} from "./cache/timestampCache.Service.js";
 
-import { getTasksCachedByMultipleIds } from "./taskCache.Service.js";
+import { getTasksCachedByMultipleIds } from "./cache/taskCache.Service.js";
 
 import mongoose from "mongoose";
 
@@ -284,17 +284,19 @@ export const totalTimeActiveForEachTag = async ({
   const taskIds = Object.keys(taskTotalsTs);
   const tasks = await getTasksCachedByMultipleIds([...taskIds]);
   const tagTotals = {};
+  const numberOfTasks = {};
 
   for (const task of tasks) {
     const totalTime = taskTotalsTs[task._id.toString()] || 0;
-
     for (const tagId of task.tags) {
+      if (!numberOfTasks[tagId]) numberOfTasks[tagId] = 0;
+      numberOfTasks[tagId]++;
       tagTotals[tagId.toString()] =
         (tagTotals[tagId.toString()] || 0) + totalTime;
     }
   }
 
-  return tagTotals;
+  return { tagTotals, numberOfTasks };
 };
 
 // Get the day with the most completed tasks in a period
@@ -426,33 +428,5 @@ export const getTaskStartStats = async ({ period, startTime, endTime }) => {
     days > 0 ? Object.values(activePerDay).reduce((sum, set) => sum + set.size, 0) / days : 0;
 
 
-    return { totalActiveStarts, avgTasksPerDay };
+  return { totalActiveStarts, avgTasksPerDay };
 };
-
-
-// // Get total number of task starts and average tasks started per day in a period
-// export const getMostActiveTimes = async (period) => {
-//   try {
-//     const allTimestamps = await getTimestampsByPeriod({ period });
-
-//     const totalActiveStarts = allTimestamps.filter((t) => t.type === 'start').length;
-
-//     const activePerDay = {};
-//     allTimestamps.forEach((t) => {
-//       if (t.type === 'start') {
-//         const day = new Date(t.timestamp).toISOString().slice(0, 10);
-//         if (!activePerDay[day]) activePerDay[day] = new Set();
-//         activePerDay[day].add(t.task);
-//       }
-//     });
-
-//     const days = Object.keys(activePerDay).length;
-//     const avgTasksPerDay =
-//       days > 0 ? Object.values(activePerDay).reduce((sum, set) => sum + set.size, 0) / days : 0;
-
-//     return { totalActiveStarts, avgTasksPerDay };
-//   } catch (error) {
-//     console.error('Failed to get most active times ', error);
-//     throw error;
-//   }
-// };

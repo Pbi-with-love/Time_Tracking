@@ -140,7 +140,7 @@ const IntervalSelectorTasks = ({ title, startTime, endTime, totalTimeForInterest
                                                                                 <TooltipTrigger asChild>
                                                                                     <span className="px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-teal-300 border border-emerald-500/30 rounded-full text-sm font-medium flex items-center gap-1 cursor-pointer">
                                                                                         <TagIcon size={14} />
-                                                                                        {tagObj.name}
+                                                                                        {tagObj.title}
                                                                                     </span>
                                                                                 </TooltipTrigger>
                                                                                 <TooltipContent side="bottom" align="start" className="inline-block max-w-xs bg-white text-black border border-gray-200 rounded-lg shadow-lg px-3 py-2">

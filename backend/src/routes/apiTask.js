@@ -1,17 +1,22 @@
 import express from 'express';
 import { getAllTasks, getTaskById, getTasksByTagId, createTask, updateTask, deleteTask } from '../controllers/TaskController.js';
 import { getOrderedTasks } from "../controllers/TaskOrder.js";
+import { handleTasksOfInterest } from "../controllers/HandlePeriod.js"
 const router = express.Router();
 
 // --- Task routes ---
 router.get('/', getAllTasks);
+
+// --- Task of interest routes ---
+router.get("/tasksofinterest", handleTasksOfInterest);
+
 // --- Sort order ---
 router.get("/orderedtasks", getOrderedTasks);
-router.get('/tag/:tagId', getTasksByTagId);
-router.get('/:id', getTaskById);
-router.post('/', createTask);
-router.patch('/:id', updateTask);
-router.delete('/:id', deleteTask);
+router.get("/tag/:tagId", getTasksByTagId);
+router.get("/:id", getTaskById);
+router.post("/", createTask);
+router.patch("/:id", updateTask);
+router.delete("/:id", deleteTask);
 
 
 

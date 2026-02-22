@@ -1,4 +1,3 @@
-import { getAllTasksIDCached } from "../services/taskCache.Service.js";
 import Timestamp from "../models/Timestamp.js";
 import mongoose from "mongoose";
 
@@ -22,7 +21,6 @@ export const getOrderedTasks = async (req, res, next) => {
         $group: {
           _id: "$task",
           lastTs: { $first: "$$ROOT" },
-          timestamps: { $push: "$$ROOT" },
         },
       },
       {
@@ -54,7 +52,6 @@ export const getOrderedTasks = async (req, res, next) => {
       {
         $project: {
           lastTs: 1,
-          timestamps: 1,
           title: "$task.title",
           description: "$task.description",
           tags: "$task.tags",
@@ -68,7 +65,6 @@ export const getOrderedTasks = async (req, res, next) => {
       ({
         _id,
         lastTs,
-        timestamps,
         title,
         description,
         tags,
@@ -104,7 +100,6 @@ export const getOrderedTasks = async (req, res, next) => {
           tags,
           taskCreatedAt,
           taskUpdatedAt,
-          timestamps,
         };
       }
     );

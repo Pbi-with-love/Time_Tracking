@@ -1,4 +1,4 @@
-import { getTimestampCached } from "../services/timestampCache.Service.js";
+import { getTimestampCached } from "../services/cache/timestampCache.Service.js";
 
 // Utility functions to aggregate timestamp durations for a specific set of timestamps
 export const sumTimestampDurations = async ({ timestamps, start, end }) => {

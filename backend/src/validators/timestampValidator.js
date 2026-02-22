@@ -1,6 +1,6 @@
 import Timestamp from "../models/Timestamp.js";
 import mongoose from "mongoose";
-import { getTaskCached } from "../services/taskCache.Service.js";
+import { getTaskCached } from "../services/cache/taskCache.Service.js";
 import { AppError } from "../utils/AppError.js";
 
 export const timestampCreateValidate = async ({ task, type, timestamp }) => {

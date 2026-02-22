@@ -145,7 +145,6 @@ export const totalTimeActiveForAllTask = async ({ period, startTime, endTime } =
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-
     const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltask`, {
       params,
     });
@@ -155,7 +154,6 @@ export const totalTimeActiveForAllTask = async ({ period, startTime, endTime } =
     throw error;
   }
 };
-
 
 // Calculate total active time per day for a specific task
 export const totalTimeActiveForEachTaskDaily = async ({
@@ -214,7 +212,7 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
 };
 
 // Calculate total active time for each tag
-export const totalTimeActiveForEachTag = async ({period, startTime, endTime}) => {
+export const totalTimeActiveForEachTag = async ({ period, startTime, endTime }) => {
   try {
     const params = {};
 
@@ -233,7 +231,7 @@ export const totalTimeActiveForEachTag = async ({period, startTime, endTime}) =>
 };
 
 // Get the day with the most completed tasks in a period
-export const getMostProductive = async ({period, startTime, endTime}) => {
+export const getMostProductive = async ({ period, startTime, endTime }) => {
   if (period === 'today') return { day: null, count: 0 };
 
   try {
@@ -254,7 +252,7 @@ export const getMostProductive = async ({period, startTime, endTime}) => {
 };
 
 // Calculate the longest continuous active streak for any task in a period
-export const getMostActiveStreak = async ({period, startTime, endTime}) => {
+export const getMostActiveStreak = async ({ period, startTime, endTime }) => {
   try {
     const params = {};
 
@@ -273,7 +271,7 @@ export const getMostActiveStreak = async ({period, startTime, endTime}) => {
 };
 
 // Get total number of task starts and average tasks started per day in a period
-export const getTaskStartStats = async ({period, startTime, endTime}) => {
+export const getTaskStartStats = async ({ period, startTime, endTime }) => {
   try {
     const params = {};
 
@@ -283,117 +281,42 @@ export const getTaskStartStats = async ({period, startTime, endTime}) => {
 
     const res = await axios.get(`${API_URL}/timestamps/taskstartstats`, { params });
     const { totalActiveStarts, avgTasksPerDay } = res.data.taskStartStats;
-    
+
     return { totalActiveStarts, avgTasksPerDay };
   } catch (error) {
-    console.error('Failed to get most active times ', error);
+    console.error('Failed to get number of task starts ', error);
     throw error;
   }
 };
 
 // Get tasks with active time within a given start and end interval
 export const getTasksOfInterest = async ({ start, end }) => {
-  const startTimeInterval = new Date(start);
-  const userSelectedEnd = new Date(end);
-  const now = new Date();
-  const endTimeInterval = userSelectedEnd > now ? now : userSelectedEnd;
+  try {
+    const res = await axios.get(`${API_URL}/tasks/tasksofinterest`, {
+      params: { start, end },
+    });
+    const taskOfInterest = res.data.taskOfInterest;
 
-  const tasks = await getAllTasks();
-
-  const tasksWithTimestamps = await Promise.all(
-    tasks.map(async (task) => {
-      const timestamps = await getTimestampByTaskId(task._id);
-
-      timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-      let activeTime = 0;
-      let currentStart = null;
-      let hasActiveInInterval = false;
-
-      for (const t of timestamps) {
-        const ts = new Date(t.timestamp);
-
-        if (t.type === 'start') {
-          if (ts >= startTimeInterval && ts <= endTimeInterval) {
-            currentStart = ts;
-            hasActiveInInterval = true;
-          }
-        } else if (t.type === 'end' && currentStart) {
-          const tsEnd = ts;
-          if (tsEnd <= startTimeInterval) {
-            currentStart = null;
-            continue;
-          }
-          const effectiveEnd = tsEnd > endTimeInterval ? endTimeInterval : tsEnd;
-          activeTime += effectiveEnd - currentStart;
-          currentStart = null;
-          hasActiveInInterval = true;
-        }
-      }
-
-      if (currentStart && currentStart < endTimeInterval) {
-        activeTime += endTimeInterval - currentStart;
-        hasActiveInInterval = true;
-      }
-
-      if (!hasActiveInInterval || activeTime <= 0) return null;
-
-      return {
-        id: task._id,
-        title: task.title,
-        tags: task.tags,
-        description: task.description,
-        activeTime,
-      };
-    }),
-  );
-
-  return tasksWithTimestamps.filter(Boolean);
+    return taskOfInterest;
+  } catch (error) {
+    console.error('Failed to get task of interest ', error);
+    throw error;
+  }
 };
 
 // Aggregate tags with total active time and number of tasks for a given period
 export const getTagsOfInterest = async ({ start, end }) => {
-  const tasks = await getTasksOfInterest({ start, end });
-  const allTags = await getAllTags();
-
-  const tagStatsMap = {};
-  tasks.forEach((task) => {
-    if (!task.tags) return;
-
-    const taskTagIds = task.tags
-      .split(',')
-      .map((s) => parseInt(s.trim(), 10))
-      .filter(Boolean);
-
-    taskTagIds.forEach((tagId) => {
-      if (!tagStatsMap[tagId]) {
-        tagStatsMap[tagId] = {
-          totalTime: 0,
-          taskIds: new Set(),
-        };
-      }
-      tagStatsMap[tagId].totalTime += task.activeTime || 0;
-      tagStatsMap[tagId].taskIds.add(task._id);
+  try {
+    const res = await axios.get(`${API_URL}/tags/tagsofinterest`, {
+      params: { start, end },
     });
-  });
+    const tagsOfInterest = res.data.tagsOfInterest;
 
-  const tagsOfInterest = Object.entries(tagStatsMap)
-    .map(([tagIdStr, { totalTime, taskIds }]) => {
-      const tagId = parseInt(tagIdStr, 10);
-      const tagObj = allTags.find((t) => t._id === tagId);
-      if (!tagObj) return null;
-
-      return {
-        id: tagObj._id,
-        title: tagObj.title,
-        description: tagObj.description,
-        activeTime: totalTime,
-        numberOfTasks: taskIds.size,
-      };
-    })
-    .filter(Boolean);
-
-  return tagsOfInterest;
+    return tagsOfInterest;
+  } catch (error) {
+    console.error('Failed to get tag of interest ', error);
+    throw error;
+  }
 };
 
 // Get detailed activity intervals for a specific task within a time range

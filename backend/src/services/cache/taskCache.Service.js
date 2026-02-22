@@ -1,6 +1,6 @@
-import redis from "../config/redisClient.js";
-import Task from "../models/Task.js";
-import { taskKey, allTasksKey } from "../utils/redisKey.js";
+import redis from "../../config/redisClient.js";
+import Task from "../../models/Task.js";
+import { taskKey, allTasksKey } from "../../utils/redisKey.js";
 
 export const getTaskCached = async (taskId) => {
   const cached = await redis.get(taskKey(taskId));
@@ -21,14 +21,15 @@ export const getTaskCached = async (taskId) => {
 export const getTasksCachedByMultipleIds = async (taskIds) => {
   if (taskIds.length === 0) return [];
 
-  const res = [];
+  const map = new Map();
   const missingIds = [];
 
   const key = taskIds.map((id) => taskKey(id));
   const cachedRaw = await redis.mGet(key);
 
   cachedRaw.forEach((cache, index) => {
-    if (cache) res.push(JSON.parse(cache));
+    const id = taskIds[index];
+    if (cache) map.set(id, JSON.parse(cache));
     else missingIds.push(taskIds[index]);
   })
 
@@ -37,7 +38,10 @@ export const getTasksCachedByMultipleIds = async (taskIds) => {
       _id: { $in: missingIds },
     }).lean();
 
-    res.push(...missingTasks);
+    for (const task of missingTasks) {
+      const id = task._id.toString();
+      map.set(id, task);
+    }
     await Promise.all(
       missingTasks.map((t) => {
         redis.set(taskKey(t._id.toString()), JSON.stringify(t), {
@@ -47,7 +51,7 @@ export const getTasksCachedByMultipleIds = async (taskIds) => {
     )
   }
 
-  return res;
+  return taskIds.map((id) => map.get(id.toString())).filter(Boolean);
 };
 
 export const getAllTasksIDCached = async () => {
@@ -160,3 +164,5 @@ export const deleteTaskCached = async (taskId) => {
 
   return deletedTask;
 };
+
+

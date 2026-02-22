@@ -1,6 +1,6 @@
-import redis from "../config/redisClient.js";
-import Timestamp from "../models/Timestamp.js";
-import { timestampKey, allTimestampsKey } from "../utils/redisKey.js";
+import redis from "../../config/redisClient.js";
+import Timestamp from "../../models/Timestamp.js";
+import { timestampKey, allTimestampsKey } from "../../utils/redisKey.js";
 
 // GET single timestamp cached
 export const getTimestampCached = async (tsId) => {
@@ -17,14 +17,16 @@ export const getTimestampCached = async (tsId) => {
 // Get multiple timestamps cached
 export const getTimestampsCachedByMultipleIds = async (tsIds) => {
   if (tsIds.length === 0) return [];
-  const res = [];
+  
+  const map = new Map();
   const missingIds = [];
 
   const keys = tsIds.map((id) => timestampKey(id));
   const cachedRaw = await redis.mGet(keys);
 
   cachedRaw.forEach((cache, index) => {
-    if (cache) res.push(JSON.parse(cache));
+    const id = tsIds[index]
+    if (cache) map.set(id, JSON.parse(cache));
     else missingIds.push(tsIds[index]);
   });
   
@@ -35,7 +37,11 @@ export const getTimestampsCachedByMultipleIds = async (tsIds) => {
       .populate("startRef")
       .lean();
 
-    res.push(...missingTs);
+    for (const ts of missingTs) {
+      const id = ts._id.toString();
+      map.set(id, ts);
+    }
+
     await Promise.all(
       missingTs.map((ts) =>
         redis.set(timestampKey(ts._id.toString()), JSON.stringify(ts), {
@@ -45,7 +51,7 @@ export const getTimestampsCachedByMultipleIds = async (tsIds) => {
     );
   }
 
-  return res;
+  return tsIds.map((id) => map.get(id.toString())).filter(Boolean);
 };
 
 // GET all timestamps cached
