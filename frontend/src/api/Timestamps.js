@@ -170,7 +170,7 @@ export const totalTimeActiveForEachTaskDaily = async ({
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforeachtasksdaily`, {
+    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforeachtaskdaily`, {
       params,
     });
     return res.data.totalTimePerDay;
@@ -181,7 +181,7 @@ export const totalTimeActiveForEachTaskDaily = async ({
 };
 
 // Calculate total active time per day for all tasks
-export const totalTimeActiveForAllTaskDaily = async ({ period, startTime, endTime } = {}) => {
+export const totalTimeActiveForAllTasksDaily = async ({ period, startTime, endTime } = {}) => {
   try {
     const params = {};
 
@@ -200,7 +200,7 @@ export const totalTimeActiveForAllTaskDaily = async ({ period, startTime, endTim
 };
 
 // Calculate total active time per hour for all tasks today
-export const totalTimeActiveForAllTaskPerHour = async () => {
+export const totalTimeActiveForAllTasksPerHour = async () => {
   try {
     const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltasksperhour`);
     const hours = res.data.hours;
@@ -393,121 +393,18 @@ export const getTaskDetailsIntervals = async ({ start, end, task }) => {
 
 // Generate daily bar chart data for a task within a date range, adjusted to Finland timezone
 export const getTaskDailyBarChart = async ({ task, start, end }) => {
-  const formatDateKeyFinland = (d) => {
-    const options = {
-      timeZone: 'Europe/Helsinki',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    };
-    const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d);
-    const values = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-    return `${values.year}-${values.month}-${values.day}`;
-  };
+  try {
+    console.log("task", task)
+    const res = await axios.get(`${API_URL}/tasks/taskdailybarchart`, {
+      params: {taskId: task, start, end },
+    });
+    const taskDaily = res.data.taskDaily;
 
-  const getFinlandStartOfDay = (d) => {
-    const options = {
-      timeZone: 'Europe/Helsinki',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour12: false,
-    };
-    const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d);
-    const values = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-    return new Date(`${values.year}-${values.month}-${values.day}T00:00:00+02:00`);
-  };
-
-  const startDate = getFinlandStartOfDay(new Date(start));
-  const endDate = getFinlandStartOfDay(new Date(end));
-  endDate.setHours(23, 59, 59, 999);
-
-  const now = new Date();
-  if (endDate > now) endDate.setTime(now.getTime());
-
-  const timestamps = await getTimestampByTaskId(task._id);
-  timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-  const activityIntervals = [];
-  let currentStart = null;
-
-  for (const t of timestamps) {
-    const ts = new Date(t.timestamp);
-
-    if (t.type === 'start') {
-      currentStart = ts;
-    } else if (t.type === 'end' && currentStart) {
-      const overlapStart = currentStart < startDate ? startDate : currentStart;
-      const overlapEnd = ts > endDate ? endDate : ts;
-
-      if (overlapStart < overlapEnd) {
-        activityIntervals.push({
-          startTime: overlapStart,
-          endTime: overlapEnd,
-          duration: overlapEnd - overlapStart,
-          status: 'End',
-        });
-      }
-      currentStart = null;
-    }
+    return taskDaily;
+  } catch (error) {
+    console.error('Failed to get task daily bar chart ', error);
+    throw error;
   }
-
-  if (currentStart && currentStart <= endDate) {
-    const overlapStart = currentStart < startDate ? startDate : currentStart;
-    const overlapEnd = endDate;
-    if (overlapStart < overlapEnd) {
-      activityIntervals.push({
-        startTime: overlapStart,
-        endTime: overlapEnd,
-        duration: overlapEnd - overlapStart,
-        status: 'Ongoing',
-      });
-    }
-  }
-
-  const dailyMap = {};
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const key = formatDateKeyFinland(d);
-    dailyMap[key] = 0;
-  }
-
-  for (const interval of activityIntervals) {
-    const startD = new Date(interval.startTime);
-    const endD = new Date(interval.endTime);
-
-    let currentDay = getFinlandStartOfDay(startD);
-
-    while (currentDay <= endD) {
-      const dayKey = formatDateKeyFinland(currentDay);
-      if (dailyMap[dayKey] !== undefined) {
-        const dayStart = new Date(currentDay);
-        const dayEnd = new Date(currentDay);
-        dayEnd.setDate(dayEnd.getDate() + 1);
-
-        const overlapStart = startD > dayStart ? startD : dayStart;
-        const overlapEnd = endD < dayEnd ? endD : dayEnd;
-
-        if (overlapStart < overlapEnd) {
-          dailyMap[dayKey] += overlapEnd - overlapStart;
-        }
-      }
-      currentDay.setDate(currentDay.getDate() + 1);
-    }
-  }
-
-  const dailyData = Object.entries(dailyMap)
-    .sort(([a], [b]) => new Date(a) - new Date(b))
-    .map(([day, ms]) => ({
-      date: day,
-      hours: ms / (1000 * 60 * 60),
-      milliseconds: ms,
-    }));
-
-  return {
-    taskId: task._id,
-    taskName: task.title,
-    dailyData,
-  };
 };
 
 // Calculate average statistics for a task: total daily active time, average start/end, break time

@@ -19,7 +19,7 @@ import {
   YAxis,
   Bar
 } from "recharts"
-import { totalTimeActiveForAllTask, getMostProductive, getMostActiveStreak, getTaskStartStats, totalTimeActiveForEachTag, totalTimeActiveForAllTaskPerHour, totalTimeActiveForAllTaskDaily, getTaskDailyBarChart } from '../api/Timestamps'
+import { totalTimeActiveForAllTask, getMostProductive, getMostActiveStreak, getTaskStartStats, totalTimeActiveForEachTag, totalTimeActiveForAllTasksPerHour, totalTimeActiveForAllTasksDaily, getTaskDailyBarChart } from '../api/Timestamps'
 import { formattedTime } from '../utils/Time'
 import { IntervalContext } from '../context/IntervalContext'
 import Alert from '../components/Alert'
@@ -95,13 +95,13 @@ const Statistics = () => {
         let dailyActivityData = [];
 
         if (periodOption.functionInput === "today") {
-          const perHour = await totalTimeActiveForAllTaskPerHour();
+          const perHour = await totalTimeActiveForAllTasksPerHour();
           dailyActivityData = perHour.map((ms, i) => ({
             day: `${i}:00`,
             hours: ms / (1000 * 60 * 60)
           }));
         } else {
-          const perDay = await totalTimeActiveForAllTaskDaily({period: periodOption.functionInput});
+          const perDay = await totalTimeActiveForAllTasksDaily({period: periodOption.functionInput});
           dailyActivityData = Object.entries(perDay)
             .sort((a, b) => new Date(a[0]) - new Date(b[0]))
             .map(([date, ms]) => ({
@@ -225,7 +225,7 @@ const Statistics = () => {
     }
     try {
       const result = await getTaskDailyBarChart({
-        task: selectedTask,
+        task: selectedTask._id,
         start: dateBarChart.start,
         end: dateBarChart.end
       });
@@ -485,7 +485,7 @@ const Statistics = () => {
           <DateTimeInput
             label="End Date"
             value={dateBarChart.end}
-            onChange={(val) => setDateBarChart(prev => ({ ...prev, start: val }))}
+            onChange={(val) => setDateBarChart(prev => ({ ...prev, end: val }))}
           />
         </div>
 

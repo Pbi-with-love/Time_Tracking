@@ -192,7 +192,7 @@ export const totalTimeActiveForEachTaskDaily = async ({
   return totalPerDay;
 };
 
-export const totalTimeActiveForAllTaskDaily = async ({
+export const totalTimeActiveForAllTasksDaily = async ({
   period,
   startTime,
   endTime,
@@ -208,7 +208,8 @@ export const totalTimeActiveForAllTaskDaily = async ({
   return totalPerDay;
 };
 
-export const totalTimeActiveForAllTaskPerHour = async () => {
+
+export const totalTimeActiveForAllTasksPerHour = async () => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
     period: "today",
   });
@@ -221,7 +222,7 @@ export const totalTimeActiveForAllTaskPerHour = async () => {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
     }
-    if (t.type === "end" && t.startRef && t.startRef._id) {
+    else if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       let startTs = new Date(
         t.startRef.timestamp < start ? start : t.startRef.timestamp,

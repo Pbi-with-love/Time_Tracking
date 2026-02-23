@@ -5,15 +5,16 @@ import {
   totalTimeActiveForEachTask,
   totalTimeActiveForAllTask,
   totalTimeActiveForEachTaskDaily,
-  totalTimeActiveForAllTaskDaily,
-  totalTimeActiveForAllTaskPerHour,
+  totalTimeActiveForAllTasksDaily,
+  totalTimeActiveForAllTasksPerHour,
   totalTimeActiveForEachTag,
   getMostProductive,
   getMostActiveStreak,
   getTaskStartStats
 } from "../services/timestampByPeriod.Service.js";
 import {
-  getTasksOfInterest
+  getTasksOfInterest,
+  getTaskDailyBarChart
 } from "../services/taskInterval.Service.js"
 import {
   getTagsOfInterest
@@ -92,7 +93,7 @@ export const handleTotalTimeActiveForAllTasksDaily = async (req, res, next) => {
   try {
     const { period, startTime, endTime } = req.query;
 
-    const totalTimePerDay = await totalTimeActiveForAllTaskDaily({
+    const totalTimePerDay = await totalTimeActiveForAllTasksDaily({
       period,
       startTime,
       endTime,
@@ -106,7 +107,7 @@ export const handleTotalTimeActiveForAllTasksDaily = async (req, res, next) => {
 
 export const handleTotalTimeActiveForAllTasksPerHour = async (req, res, next) => {
   try {
-    const hours = await totalTimeActiveForAllTaskPerHour();
+    const hours = await totalTimeActiveForAllTasksPerHour();
 
     res.status(200).json({ hours });
   } catch (err) {
@@ -176,6 +177,18 @@ export const handleTagsOfInterest = async (req, res, next) => {
     const tagsOfInterest = await getTagsOfInterest({start, end});
     return res.status(200).json({ tagsOfInterest })
   } catch (err) {
+    next(err)
+  }
+}
+
+export const handleTaskDailyBarChart = async (req, res, next) => {
+  try {
+    const { start, end, taskId } = req.query;
+    console.log("taskId", taskId)
+    const taskDaily = await getTaskDailyBarChart({taskId, startTime: start, endTime: end});
+    return res.status(200).json({ taskDaily })
+  } catch (err) {
+    console.log(err)
     next(err)
   }
 }

@@ -32,7 +32,7 @@ router.get("/totaltimeactiveforalltask", handleTotalTimeActiveForAllTask);
 
 // --- Period-based total active time for each task daily ---
 router.get(
-  "/totaltimeactiveforeachtasksdaily",
+  "/totaltimeactiveforeachtaskdaily",
   handleTotalTimeActiveForEachTasksDaily,
 );
 
