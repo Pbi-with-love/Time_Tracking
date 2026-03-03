@@ -184,11 +184,9 @@ export const handleTagsOfInterest = async (req, res, next) => {
 export const handleTaskDailyBarChart = async (req, res, next) => {
   try {
     const { start, end, taskId } = req.query;
-    console.log("taskId", taskId)
     const taskDaily = await getTaskDailyBarChart({taskId, startTime: start, endTime: end});
     return res.status(200).json({ taskDaily })
   } catch (err) {
-    console.log(err)
     next(err)
   }
 }

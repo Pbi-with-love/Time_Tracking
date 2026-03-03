@@ -8,6 +8,7 @@ import {
   createTaskCached,
 } from "../services/cache/taskCache.Service.js";
 import { AppError } from "../utils/AppError.js";
+import { getTaskStats } from "../services/taskInterval.Service.js"
 
 
 // GET all tasks
@@ -93,3 +94,12 @@ export const deleteTask = async (req, res, next) => {
     next(err);
   }
 };
+
+export const taskStats = async (req, res, next) => {
+  try {
+    const stats = await getTaskStats();
+    res.status(200).json(stats);
+  } catch (err) {
+    next(err);
+  }
+}

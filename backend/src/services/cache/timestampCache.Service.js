@@ -58,6 +58,7 @@ export const getTimestampsCachedByMultipleIds = async (tsIds) => {
 export const getAllTimestampsCached = async () => {
   const allCached = await redis.get(allTimestampsKey());
 
+  const map = new Map();
   if (allCached) {
     const ids = JSON.parse(allCached);
     if (!ids.length) {
@@ -67,12 +68,12 @@ export const getAllTimestampsCached = async () => {
     const keys = ids.map((id) => timestampKey(id));
     const cachedRaw = await redis.mGet(keys);
 
-    const timestampsCache = [];
     const missingIds = [];
 
     cachedRaw.forEach((cache, index) => {
-      if (cache) timestampsCache.push(JSON.parse(cache));
-      else missingIds.push(ids[index]);
+      const id = ids[index];
+      if (cache) map.set(id, JSON.parse(cache));
+      else missingIds.push(id);
     });
 
     if (missingIds.length > 0) {
@@ -82,7 +83,11 @@ export const getAllTimestampsCached = async () => {
         .populate("startRef")
         .lean();
 
-      timestampsCache.push(...missingTs);
+      for (const ts of missingTs) {
+        const id = ts._id.toString();
+        map.set(id, ts);
+      }
+
       await Promise.all(
         missingTs.map((ts) =>
           redis.set(timestampKey(ts._id.toString()), JSON.stringify(ts), {
@@ -92,7 +97,7 @@ export const getAllTimestampsCached = async () => {
       );
     }
 
-    return timestampsCache;
+    return ids.map((id) => map.get(id.toString())).filter(Boolean);
   }
 
   const allTs = await Timestamp.find().populate("startRef").lean();

@@ -319,6 +319,22 @@ export const getTagsOfInterest = async ({ start, end }) => {
   }
 };
 
+
+// Generate daily bar chart data for a task within a date range, adjusted to Finland timezone
+export const getTaskDailyBarChart = async ({ task, start, end }) => {
+  try {
+    const res = await axios.get(`${API_URL}/tasks/taskdailybarchart`, {
+      params: {taskId: task, start, end },
+    });
+    const taskDaily = res.data.taskDaily;
+
+    return taskDaily;
+  } catch (error) {
+    console.error('Failed to get task daily bar chart ', error);
+    throw error;
+  }
+};
+
 // Get detailed activity intervals for a specific task within a time range
 export const getTaskDetailsIntervals = async ({ start, end, task }) => {
   const startInterval = new Date(start);
@@ -391,115 +407,15 @@ export const getTaskDetailsIntervals = async ({ start, end, task }) => {
   };
 };
 
-// Generate daily bar chart data for a task within a date range, adjusted to Finland timezone
-export const getTaskDailyBarChart = async ({ task, start, end }) => {
+// Calculate average statistics for a task: total daily active time, average start/end, break time
+export const getTaskStats = async (taskId) => {
   try {
-    console.log("task", task)
-    const res = await axios.get(`${API_URL}/tasks/taskdailybarchart`, {
-      params: {taskId: task, start, end },
-    });
-    const taskDaily = res.data.taskDaily;
-
-    return taskDaily;
+    const res = await axios.get(`${API_URL}/tasks/taskstats`);
+    return res.data
   } catch (error) {
-    console.error('Failed to get task daily bar chart ', error);
+    console.error('Failed to get task stats ', error);
     throw error;
   }
-};
-
-// Calculate average statistics for a task: total daily active time, average start/end, break time
-export const getTaskAvgStats = async (taskId) => {
-  const timestamps = await getTimestampByTaskId(taskId);
-  if (!timestamps || timestamps.length === 0) return null;
-
-  timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-  let firstStart = null;
-  let lastEnd = null;
-  let totalActiveMs = 0;
-  let startTimes = [];
-  let endTimes = [];
-  let breakTimes = [];
-
-  let currentStart = null;
-
-  for (const t of timestamps) {
-    const ts = new Date(t.timestamp);
-
-    if (t.type === 'start') {
-      currentStart = ts;
-      startTimes.push(ts.getTime());
-
-      if (!firstStart) {
-        firstStart = ts;
-      }
-
-      if (lastEnd) {
-        breakTimes.push(ts.getTime() - lastEnd.getTime());
-      }
-    } else if (t.type === 'end' && currentStart) {
-      const tsEnd = ts;
-      endTimes.push(tsEnd.getTime());
-      totalActiveMs += tsEnd - currentStart;
-      lastEnd = tsEnd;
-      currentStart = null;
-    }
-  }
-
-  if (currentStart) {
-    const now = new Date();
-    totalActiveMs += now - currentStart;
-    lastEnd = now;
-  }
-
-  if (!firstStart) return null;
-
-  const startDay = new Date(firstStart);
-  startDay.setHours(0, 0, 0, 0);
-
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-
-  const msPerDay = 24 * 60 * 60 * 1000;
-
-  const numDays = Math.floor((now - startDay) / msPerDay) + 1;
-
-  const avgTotalTimePerDay = totalActiveMs / numDays;
-
-  const avgStartTime = startTimes.length
-    ? startTimes.reduce((sum, ts) => {
-        const d = new Date(ts);
-        const timeOfDay =
-          d.getHours() * 3600000 +
-          d.getMinutes() * 60000 +
-          d.getSeconds() * 1000 +
-          d.getMilliseconds();
-        return sum + timeOfDay;
-      }, 0) / startTimes.length
-    : null;
-
-  const avgEndTime = endTimes.length
-    ? endTimes.reduce((sum, ts) => {
-        const d = new Date(ts);
-        const timeOfDay =
-          d.getHours() * 3600000 +
-          d.getMinutes() * 60000 +
-          d.getSeconds() * 1000 +
-          d.getMilliseconds();
-        return sum + timeOfDay;
-      }, 0) / endTimes.length
-    : null;
-
-  const avgBreakTime = breakTimes.length
-    ? breakTimes.reduce((a, b) => a + b, 0) / breakTimes.length
-    : null;
-
-  return {
-    avgTotalTimePerDay,
-    avgStartTime,
-    avgEndTime,
-    avgBreakTime,
-  };
 };
 
 // Check which intervals overlap in a list before update interval

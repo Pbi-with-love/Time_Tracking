@@ -1,4 +1,4 @@
-import { getTimestampCached } from "../services/cache/timestampCache.Service.js";
+import { getTimestampsCachedByMultipleIds } from "../services/cache/timestampCache.Service.js";
 
 // Utility functions to aggregate timestamp durations for a specific set of timestamps
 export const sumTimestampDurations = async ({ timestamps, start, end }) => {
@@ -10,7 +10,7 @@ export const sumTimestampDurations = async ({ timestamps, start, end }) => {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
     }
-    if (t.type === "end" && t.startRef && t.startRef._id) {
+    else if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       let startTs = new Date(
         t.startRef.timestamp < start ? start : t.startRef.timestamp,
@@ -46,12 +46,14 @@ export const accumulateDailyTime = async ({ timestamps, start, end }) => {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
     }
-    if (t.type === "end" && t.startRef && t.startRef._id) {
+    else if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       let startTs = new Date(
         t.startRef.timestamp < start ? start : t.startRef.timestamp,
       );
       let endTs = new Date(t.timestamp > end ? end : t.timestamp);
+      /* These lines of code are creating new Date objects representing the start and end of a specific
+      day based on the timestamps provided. */
       let startDay = new Date(
         startTs.getFullYear(),
         startTs.getMonth(),

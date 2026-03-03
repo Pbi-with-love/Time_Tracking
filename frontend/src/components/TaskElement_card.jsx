@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Tag, SquarePen, Trash, Ellipsis } from 'lucide-react';
 import Timerbutton from './Timerbutton';
-import { getOrderedTasks, getTaskAvgStats } from '../api/Timestamps';
+import { getOrderedTasks, getTaskStats } from '../api/Timestamps';
 import { calculateTotalTime, formattedTime } from '../utils/Time';
 import DisplayAvg from './DisplayAvg';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -51,19 +51,17 @@ const TaskElement_card = ({
   // Set the time button
   const [activeTimers, setActiveTimers] = useState({});
 
-  const [avgStats, setAvgStats] = useState({});
+  const [stats, setStats] = useState({
+    averageActiveTimePerDay: {},
+    timeConsistency: {},
+    activeDayCount: {},
+    activityFrequency: {}
+  });
 
   useEffect(() => {
     const fetchAvgStats = async () => {
-      const statsPromises = tasks.map((task) => getTaskAvgStats(task._id));
-      const statsArray = await Promise.all(statsPromises);
-
-      const statsMap = {};
-      tasks.forEach((task, i) => {
-        statsMap[task._id] = statsArray[i];
-      });
-
-      setAvgStats(statsMap);
+      const statsMap = await getTaskStats();
+      setStats(statsMap);
     };
 
     fetchAvgStats();
@@ -298,43 +296,25 @@ const TaskElement_card = ({
                       {task.description || 'No additional data'}
                     </p>
 
-                    {avgStats[task._id] ? (
-                      <DisplayAvg
-                        className={'hidden lg:grid grid-cols-2 mt-8 xl:grid-cols-4 gap-4'}
-                        totalTime={avgStats[task._id].avgTotalTimePerDay}
-                        startTime={avgStats[task._id].avgStartTime}
-                        endTime={avgStats[task._id].avgEndTime}
-                        breakTime={avgStats[task._id].avgBreakTime}
-                      />
-                    ) : (
-                      <DisplayAvg
-                        className={'hidden lg:grid grid-cols-2 mt-8 xl:grid-cols-4 gap-4'}
-                        totalTime={0}
-                        startTime={0}
-                        endTime={0}
-                        breakTime={0}
-                      />
-                    )}
+
+                    <DisplayAvg
+                      className={'hidden lg:grid grid-cols-2 mt-8 xl:grid-cols-4 gap-4'}
+                      averageActiveTimePerDay={stats?.averageActiveTimePerDay?.[task._id] ?? "None"}
+                      timeConsistency={stats?.timeConsistency[task._id]?.level ?? "None"}
+                      activeDayCount={stats?.activeDayCount[task._id] ?? 0}
+                      activityFrequency={stats?.activityFrequency[task._id] ?? 0}
+                    />
+
                   </div>
                 </div>
 
-                {avgStats[task._id] ? (
-                  <DisplayAvg
-                    className={'lg:hidden mt-4 grid grid-cols-2 gap-4 w-full'}
-                    totalTime={avgStats[task._id].avgTotalTimePerDay}
-                    startTime={avgStats[task._id].avgStartTime}
-                    endTime={avgStats[task._id].avgEndTime}
-                    breakTime={avgStats[task._id].avgBreakTime}
-                  />
-                ) : (
-                  <DisplayAvg
-                    className={'lg:hidden mt-4 grid grid-cols-2 gap-4 w-full'}
-                    totalTime={0}
-                    startTime={0}
-                    endTime={0}
-                    breakTime={0}
-                  />
-                )}
+                <DisplayAvg
+                  className={'lg:hidden mt-4 grid grid-cols-2 gap-4 w-full'}
+                  averageActiveTimePerDay={stats?.averageActiveTimePerDay?.[task._id] ?? "None"}
+                  timeConsistency={stats?.timeConsistency[task._id]?.level ?? "None"}
+                  activeDayCount={stats?.activeDayCount[task._id] ?? 0}
+                  activityFrequency={stats?.activityFrequency[task._id] ?? 0}
+                />
 
                 {notification.show && (
                   <Alert
