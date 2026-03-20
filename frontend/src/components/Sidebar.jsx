@@ -41,7 +41,7 @@ const Sidebar = () => {
                         <p className={`font-semibold md:text-sm ${textClass}`}>SmartTime</p>
                     </div>
                     <div className="flex items-center gap-2 absolute md:static right-0 top-0">
-                        <button className={`w-10 h-10 ${theme === 'dark' ? "bg-neutral-900 hover:bg-neutral-800" : " hover:bg-yellow-200"} rounded-full flex items-center justify-center cursor-pointer`}>
+                        <button className={`w-10 h-10 ${theme === 'dark' ? "bg-neutral-900 hover:bg-neutral-800" : ""} rounded-full flex items-center justify-center cursor-pointer`}>
                             <Bell className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6" />
                         </button>
 
@@ -56,7 +56,7 @@ const Sidebar = () => {
                     <Search size={20} className='text-gray-500 absolute left-3 top-3' />
                     <input
                         type="text"
-                        className={`rounded-xl px-4 py-3 pl-10 w-full text-sm ${theme === 'dark' ? "bg-neutral-900 focus:border-neutral-600" : "bg-yellow-200 focus:border-yellow-600"}  ${textClass} border-2 border-neutral-800 focus:outline-none  ${placeholderClass}`}
+                        className={`rounded-xl px-4 py-3 pl-10 w-full text-sm ${theme === 'dark' ? "bg-neutral-900 focus:border-neutral-600" : ""}  ${textClass} border-2 border-neutral-800 focus:outline-none  ${placeholderClass}`}
                         placeholder='Search'
                     />
                 </div>
@@ -71,10 +71,10 @@ const Sidebar = () => {
                                     onClick={toggleSidebar}
                                     className={({ isActive }) =>
                                         `w-full flex px-3 py-2.5 rounded-lg ${isActive
-                                            ? theme === 'dark' ? 'bg-neutral-800 text-white' : 'bg-yellow-200 text-black'
+                                            ? theme === 'dark' ? 'bg-neutral-800 text-white' : ''
                                             : theme === 'dark'
                                                 ? 'text-gray-400 hover:bg-neutral-800 hover:text-white'
-                                                : 'text-gray-900  hover:bg-yellow-200 hover:text-black'
+                                                : ''
                                         }`
                                     }
                                 >

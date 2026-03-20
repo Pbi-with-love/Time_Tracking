@@ -10,7 +10,8 @@ import {
   totalTimeActiveForEachTag,
   getMostProductive,
   getMostActiveStreak,
-  getTaskStartStats
+  getTaskStartStats,
+  checkNewIntervalOverlap
 } from "../services/timestampByPeriod.Service.js";
 import {
   getTasksOfInterest,
@@ -23,10 +24,10 @@ import { AppError } from "../utils/AppError.js";
 
 export const handleGetTimestampsByPeriod = async (req, res, next) => {
   try {
-    const { period, startTime, endTime } = req.query;
+    const { period, startTime, endTime, taskId } = req.query;
 
     const { timestamps } = await getTimestampsByPeriod(
-      { period, startTime, endTime }
+      { period, startTime, endTime, taskId }
     );
 
     res.status(200).json(timestamps);
@@ -186,6 +187,16 @@ export const handleTaskDailyBarChart = async (req, res, next) => {
     const { start, end, taskId } = req.query;
     const taskDaily = await getTaskDailyBarChart({taskId, startTime: start, endTime: end});
     return res.status(200).json({ taskDaily })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const handleCheckNewIntervalOverlap = async (req, res, next) => {
+  try {
+    const { start, end, taskId } = req.query;
+    const isOverLap = await checkNewIntervalOverlap({taskId, startTime: start, endTime: end});
+    return res.status(200).json({ isOverLap });
   } catch (err) {
     next(err)
   }

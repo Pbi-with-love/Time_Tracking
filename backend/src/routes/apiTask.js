@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllTasks, getTaskById, getTasksByTagId, createTask, updateTask, deleteTask, taskStats } from '../controllers/TaskController.js';
+import { getAllTasks, getTaskById, getTasksByTagId, createTask, updateTask, deleteTask, taskStats,taskDetailsIntervals } from '../controllers/TaskController.js';
 import { getOrderedTasks } from "../controllers/TaskOrder.js";
 import { handleTasksOfInterest, handleTaskDailyBarChart } from "../controllers/HandlePeriod.js"
 const router = express.Router();
@@ -13,8 +13,11 @@ router.get("/tasksofinterest", handleTasksOfInterest);
 // --- Specific task daily active time for bar chart
 router.get("/taskdailybarchart", handleTaskDailyBarChart);
 
-// --- Temp
+// --- Stats for each task
 router.get("/taskstats", taskStats);
+
+// --- Get interval for one task in a specific time range
+router.get("/taskdetailsintervals", taskDetailsIntervals)
 
 // --- Sort order ---
 router.get("/orderedtasks", getOrderedTasks);

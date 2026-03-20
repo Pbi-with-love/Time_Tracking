@@ -11,6 +11,7 @@ import {
 } from "./cache/timestampCache.Service.js";
 
 import { getTasksCachedByMultipleIds } from "./cache/taskCache.Service.js";
+import { getTimestampsForTask } from "../controllers/TimestampController.js"
 
 import mongoose from "mongoose";
 
@@ -301,7 +302,7 @@ export const totalTimeActiveForEachTag = async ({
 };
 
 // Get the day with the most completed tasks in a period
-export const getMostProductive = async ({ period, startTime, endTime }) => {
+export const getMostProductive = async ({ period, startTime, endTime } = {}) => {
   if (period === "today") return { day: null, count: 0 };
 
   const { timestamps } = await getTimestampsByPeriod({
@@ -353,7 +354,7 @@ export const getMostProductive = async ({ period, startTime, endTime }) => {
  * currentStreakTasks is a set use to track how many task have been activated during this streak by storing all the ts type start.
  * For example S1 -> S2 -> S3 -> E1 -> E3 -> E2 have 3 startTs which means the number of task active in this streak is currentStreakTasks.size == 3
  */
-export const getMostActiveStreak = async ({ period, startTime, endTime }) => {
+export const getMostActiveStreak = async ({ period, startTime, endTime } = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
     period,
     startTime,
@@ -405,7 +406,7 @@ export const getMostActiveStreak = async ({ period, startTime, endTime }) => {
   return { maxStreak, maxTotalTaskActiveDuringStreak };
 };
 
-export const getTaskStartStats = async ({ period, startTime, endTime }) => {
+export const getTaskStartStats = async ({ period, startTime, endTime } = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
     period,
     startTime,
@@ -431,3 +432,78 @@ export const getTaskStartStats = async ({ period, startTime, endTime }) => {
 
   return { totalActiveStarts, avgTasksPerDay };
 };
+
+// Check if a new interval overlaps with existing intervals for a task before create new interval
+export const checkNewIntervalOverlap = async ({startTime, endTime, taskId} = {}) => {
+  const timestamps = await getTimestampsForTask(taskId);
+
+  if (!timestamps || timestamps.length === 0) return false;
+
+  let prevStart = null;
+  const start = new Date(startTime).getTime();
+  const end = new Date(endTime).getTime();
+
+  for (const t of timestamps) {
+    const time = new Date(t.timestamp).getTime();
+    if (t.type == "start") {
+      prevStart = time;
+    } else if (t.type == "end" && prevStart != null) {
+      let startTs = prevStart;
+      let endTs = new Date(t.timestamp).getTime();
+
+      if (startTs < end && endTs > start) return true;
+      prevStart = null;
+    }
+  }
+
+  return false;
+}
+
+
+// // Check if a new interval overlaps with existing intervals for a task before create new interval
+// export const checkNewIntervalOverlap = async (startTime, endTime, taskId) => {
+//   try {
+//     const timestamps = await getTimestampByTaskId(taskId);
+
+//     if (!timestamps || timestamps.length === 0) return false;
+
+//     const sorted = timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+//     const intervals = [];
+//     for (let i = 0; i < sorted.length; i++) {
+//       const current = sorted[i];
+//       if (current.type === 'start') {
+//         const end = sorted.slice(i + 1).find((ts) => ts.type === 'end');
+//         if (end) {
+//           intervals.push({
+//             start: new Date(current.timestamp).getTime(),
+//             end: new Date(end.timestamp).getTime(),
+//           });
+//         }
+//       }
+//     }
+
+//     const newInterval = {
+//       start: new Date(startTime).getTime(),
+//       end: new Date(endTime).getTime(),
+//     };
+//     intervals.push(newInterval);
+
+//     for (let i = 0; i < intervals.length; i++) {
+//       const a = intervals[i];
+//       for (let j = i + 1; j < intervals.length; j++) {
+//         const b = intervals[j];
+//         if (a.start < b.end && a.end > b.start) {
+//           if (i === intervals.length - 1 || j === intervals.length - 1) {
+//             return true;
+//           }
+//         }
+//       }
+//     }
+
+//     return false;
+//   } catch (error) {
+//     console.error('Error checking interval overlap:', error);
+//     return false;
+//   }
+// };

@@ -16,7 +16,8 @@ import {
   handleTotalTimeActiveForEachTag,
   handleMostProductiveDay,
   handleMostActiveStreak,
-  handleTaskStartStats
+  handleTaskStartStats,
+  handleCheckNewIntervalOverlap
 } from "../controllers/HandlePeriod.js";
 
 const router = express.Router();
@@ -59,6 +60,9 @@ router.get("/mostactivestreak", handleMostActiveStreak)
 
 // --- Period-based: calculate how many times tasks were started and their daily average
 router.get("/taskstartstats", handleTaskStartStats)
+
+// --- Period-based: checking overlaping before creating new interval
+router.get("/isoverlapping", handleCheckNewIntervalOverlap)
 
 // --- Timestamp routes ---
 router.get("/", getAllTimestamps);

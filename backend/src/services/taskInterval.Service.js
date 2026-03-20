@@ -2,6 +2,7 @@ import { getTasksCachedByMultipleIds } from "./cache/taskCache.Service.js";
 import {
   totalTimeActiveForAllTask,
   totalTimeActiveForEachTaskDaily,
+  getTimestampsByPeriod
 } from "./timestampByPeriod.Service.js";
 import { getAllTimestampsCached, getTimestampsCachedByMultipleIds } from "./cache/timestampCache.Service.js"
 import { getTaskCached } from "./cache/taskCache.Service.js";
@@ -48,66 +49,6 @@ export const getTaskDailyBarChart = async ({ taskId, startTime, endTime }) => {
   };
 };
 
-// const getTaskActivityFrequency = async () => {
-//   const activityFrequencyData = await Timestamp.aggregate([
-//     { $match: { type: "start" } },
-//     {
-//       $facet: {
-//         perTask: [
-//           {
-//             $group: {
-//               _id: "$task",
-//               count: { $sum: 1 }
-//             }
-//           }
-//         ],
-//         total: [{ $count: "totalCount" }]
-//       }
-//     }
-//   ]);
-
-//   if (!activityFrequencyData.length) return [];
-
-//   const { perTask, total } = activityFrequencyData[0];
-//   const totalCount = total[0]?.totalCount || 0;
-//   if (totalCount === 0) return [];
-
-//   const activityFrequency = perTask.map((task) => ({
-//     _id: task._id.toString(),
-//     frequency: task.count / totalCount
-//   }));
-
-//   const sorted = [...activityFrequency].sort(
-//     (a, b) => a.frequency - b.frequency
-//   );
-
-//   const values = sorted.map(t => t.frequency);
-
-//   const percentile = (arr, p) => {
-//     const index = Math.ceil(p * arr.length) - 1;
-//     return arr[Math.max(0, index)];
-//   };
-
-//   const Q1 = percentile(values, 0.25);
-//   const Q2 = percentile(values, 0.5);
-//   const Q3 = percentile(values, 0.75);
-
-//   const classified = activityFrequency.map((task) => {
-//     let level;
-//     if (task.frequency < Q1) level = "rare";
-//     else if (task.frequency < Q2) level = "occasional";
-//     else if (task.frequency < Q3) level = "frequent";
-//     else level = "very_frequent";
-
-//     return {
-//       ...task,
-//       level
-//     };
-//   });
-
-
-//   return classified;
-// };
 
 export const getTaskStats = async () => {
   // Stat 1: The ratio number of ts type start for a specific task and the number of total ts type start of all tasks
@@ -262,3 +203,142 @@ export const getTaskStats = async () => {
 
   return {averageActiveTimePerDay: avgPerDay, timeConsistency, activeDayCount, activityFrequency: classified};
 }
+
+// Get detailed activity intervals for a specific task within a time range
+export const getTaskDetailsIntervals = async ({startTime, endTime, taskId}) => {
+  const task = await getTaskCached(taskId);
+  const { timestamps, start, end } = await getTimestampsByPeriod({
+    taskId,
+    startTime,
+    endTime,
+  });
+
+  const tsWithoutEnd = new Set();
+  const activityIntervals = [];
+  for (const t of timestamps) {
+    if (t.type === "start") {
+      tsWithoutEnd.add(t._id.toString());
+    } else if (t.type === "end" && t.startRef && t.startRef._id) {
+      tsWithoutEnd.delete(t.startRef._id.toString());
+      let originalStartTs = new Date(t.startRef.timestamp);
+      let startTs = new Date(
+        t.startRef.timestamp < start ? start : t.startRef.timestamp,
+      );
+      let originalEndTs = new Date(t.timestamp)
+      let endTs = new Date(t.timestamp > end ? end : t.timestamp);
+      activityIntervals.push({
+        startTsId: t.startRef._id,
+        endTsId: t._id,
+        startTime: startTs,
+        endTime: endTs,
+        duration: endTs - startTs,
+        originalStart: originalStartTs,
+        originalEnd: originalEndTs,
+        status: 'End',
+      })
+    }
+  }
+  if (tsWithoutEnd.size > 0) {
+    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([
+      ...tsWithoutEnd,
+    ]);
+
+    for (const ts of unfinishedTimestamps) {
+      let originalTsTime = new Date(ts.timestamp);
+      let tsTime = new Date(ts.timestamp < start ? start : ts.timestamp);
+      let current = new Date(tsTime);
+      activityIntervals.push({
+        startTsId: ts._id,
+        endTsId: null,
+        startTime: tsTime,
+        endTime: null,
+        duration: current - tsTime,
+        status: 'Ongoing',
+        originalStart: originalTsTime,
+        originalEnd: current
+      })
+    }
+  }
+  const filteredIntervals = activityIntervals.filter((interval) => interval.duration > 0);
+  filteredIntervals.sort((a, b) => a.startTime - b.startTime);
+
+  return {
+    id: taskId,
+    title: task.title,
+    tags: task.tags,
+    description: task.description,
+    activityIntervals: filteredIntervals,
+  };
+}
+
+// // Get detailed activity intervals for a specific task within a time range
+// export const getTaskDetailsIntervals = async ({ start, end, task }) => {
+//   const startInterval = new Date(start);
+//   const endIntervalUser = new Date(end);
+//   const now = new Date();
+//   const endInterval = endIntervalUser > now ? now : endIntervalUser;
+
+//   const timestamps = await getTimestampByTaskId(task._id);
+//   timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+//   const activityIntervals = [];
+//   let currentStart = null;
+//   let currentStartId = null;
+
+//   for (const t of timestamps) {
+//     const ts = new Date(t.timestamp);
+
+//     if (t.type === 'start') {
+//       currentStart = ts;
+//       currentStartId = t._id;
+//     } else if (t.type === 'end' && currentStart) {
+//       const tsEnd = ts;
+
+//       const overlapStart = currentStart < endInterval ? currentStart : null;
+//       const overlapEnd = tsEnd > startInterval ? tsEnd : null;
+
+//       if (overlapStart && overlapEnd && overlapStart < overlapEnd) {
+//         activityIntervals.push({
+//           startTsId: currentStartId,
+//           endTsId: t._id,
+//           startTime: overlapStart < startInterval ? startInterval : overlapStart,
+//           endTime: overlapEnd > endInterval ? endInterval : overlapEnd,
+//           duration: overlapEnd - overlapStart,
+//           status: 'End',
+//           originalStart: currentStart,
+//           originalEnd: tsEnd,
+//         });
+//       }
+
+//       currentStart = null;
+//       currentStartId = null;
+//     }
+//   }
+
+//   if (currentStart && currentStart < endInterval) {
+//     const overlapStart = currentStart < endInterval ? currentStart : null;
+//     if (overlapStart) {
+//       activityIntervals.push({
+//         startTsId: currentStartId,
+//         endTsId: null,
+//         startTime: overlapStart < startInterval ? startInterval : overlapStart,
+//         endTime: null,
+//         duration: Date.now() - overlapStart.getTime(),
+//         status: 'Ongoing',
+//         originalStart: currentStart,
+//         originalEnd: null,
+//       });
+//     }
+//   }
+
+//   const filteredIntervals = activityIntervals.filter((interval) => interval.duration > 0);
+//   filteredIntervals.sort((a, b) => a.startTime - b.startTime);
+
+//   return {
+//     id: task._id,
+//     title: task.title,
+//     tags: task.tags,
+//     description: task.description,
+//     activityIntervals: filteredIntervals,
+//   };
+// };

@@ -8,7 +8,7 @@ import {
   createTaskCached,
 } from "../services/cache/taskCache.Service.js";
 import { AppError } from "../utils/AppError.js";
-import { getTaskStats } from "../services/taskInterval.Service.js"
+import { getTaskStats, getTaskDetailsIntervals } from "../services/taskInterval.Service.js"
 
 
 // GET all tasks
@@ -100,6 +100,17 @@ export const taskStats = async (req, res, next) => {
     const stats = await getTaskStats();
     res.status(200).json(stats);
   } catch (err) {
+    next(err);
+  }
+}
+
+export const taskDetailsIntervals = async (req, res, next) => {
+  try {
+    const { taskId, startTime, endTime } = req.query;
+    const activityIntervals = await getTaskDetailsIntervals({ taskId, startTime, endTime });
+    res.status(200).json(activityIntervals);
+  } catch (err) {
+    console.log(err);
     next(err);
   }
 }

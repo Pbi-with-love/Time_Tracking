@@ -82,7 +82,7 @@ const AddTimestampInterval = ({ onClose, taskId, onSuccess, onError, taskActivit
             const taskInfo = await getTaskDetailsIntervals({
                 start: new Date(start),
                 end: new Date(end),
-                task: taskDetails
+                task: taskDetails._id
             });
 
             setTaskActivityDetails(taskInfo.activityIntervals || []);

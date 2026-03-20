@@ -100,13 +100,14 @@ export const getOrderedTasks = async (tasks) => {
 };
 
 // Filter timestamps by a given period (today, thisWeek, thisMonth, all)
-export const getTimestampsByPeriod = async ({ period, startTime, endTime } = {}) => {
+export const getTimestampsByPeriod = async ({ period, startTime, endTime, taskId } = {}) => {
   try {
     const params = {};
 
     if (period) params.period = period;
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
+    if (taskId) params.taskId = taskId;
 
     const res = await axios.get(`${API_URL}/timestamps/timestampsbyperiod`, { params });
     return res.data;
@@ -337,77 +338,19 @@ export const getTaskDailyBarChart = async ({ task, start, end }) => {
 
 // Get detailed activity intervals for a specific task within a time range
 export const getTaskDetailsIntervals = async ({ start, end, task }) => {
-  const startInterval = new Date(start);
-  const endIntervalUser = new Date(end);
-  const now = new Date();
-  const endInterval = endIntervalUser > now ? now : endIntervalUser;
-
-  const timestamps = await getTimestampByTaskId(task._id);
-  timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-  const activityIntervals = [];
-  let currentStart = null;
-  let currentStartId = null;
-
-  for (const t of timestamps) {
-    const ts = new Date(t.timestamp);
-
-    if (t.type === 'start') {
-      currentStart = ts;
-      currentStartId = t._id;
-    } else if (t.type === 'end' && currentStart) {
-      const tsEnd = ts;
-
-      const overlapStart = currentStart < endInterval ? currentStart : null;
-      const overlapEnd = tsEnd > startInterval ? tsEnd : null;
-
-      if (overlapStart && overlapEnd && overlapStart < overlapEnd) {
-        activityIntervals.push({
-          startTsId: currentStartId,
-          endTsId: t._id,
-          startTime: overlapStart < startInterval ? startInterval : overlapStart,
-          endTime: overlapEnd > endInterval ? endInterval : overlapEnd,
-          duration: overlapEnd - overlapStart,
-          status: 'End',
-          originalStart: currentStart,
-          originalEnd: tsEnd,
-        });
-      }
-
-      currentStart = null;
-      currentStartId = null;
-    }
+  try {
+    const res = await axios.get(`${API_URL}/tasks/taskdetailsintervals`, {
+      params: {taskId: task, startTime: start, endTime: end },
+    });
+    const activityIntervals = res.data;
+    return activityIntervals;
+  } catch (error) {
+    console.error('Failed to get task details intervals ', error);
+    throw error;
   }
-
-  if (currentStart && currentStart < endInterval) {
-    const overlapStart = currentStart < endInterval ? currentStart : null;
-    if (overlapStart) {
-      activityIntervals.push({
-        startTsId: currentStartId,
-        endTsId: null,
-        startTime: overlapStart < startInterval ? startInterval : overlapStart,
-        endTime: null,
-        duration: Date.now() - overlapStart.getTime(),
-        status: 'Ongoing',
-        originalStart: currentStart,
-        originalEnd: null,
-      });
-    }
-  }
-
-  const filteredIntervals = activityIntervals.filter((interval) => interval.duration > 0);
-  filteredIntervals.sort((a, b) => a.startTime - b.startTime);
-
-  return {
-    id: task._id,
-    title: task.title,
-    tags: task.tags,
-    description: task.description,
-    activityIntervals: filteredIntervals,
-  };
 };
 
-// Calculate average statistics for a task: total daily active time, average start/end, break time
+// Calculate statistics for a task
 export const getTaskStats = async (taskId) => {
   try {
     const res = await axios.get(`${API_URL}/tasks/taskstats`);
@@ -439,8 +382,8 @@ export const checkOverlap = (intervals) => {
       if (isNaN(b.start) || isNaN(b.end)) continue;
 
       if (a.start < b.end && a.end > b.start) {
-        flags[a._idx] = true;
-        flags[b._idx] = true;
+        flags[a.idx] = true;
+        flags[b.idx] = true;
       }
     }
   }
@@ -448,48 +391,25 @@ export const checkOverlap = (intervals) => {
   return flags;
 };
 
+// export const checkNewIntervalOverlap = async (startTime, endTime, taskId) => {
+//   try {
+//     const timestamps = await getTimestampsByPeriod({period, startTime, endTime, taskId});
+//     if (timestamps.length > 0) return false;
+//     return true;
+//   } catch (error) {
+//     console.error('Error checking interval overlap:', error);
+//     return false;
+//   }
+// }
+
 // Check if a new interval overlaps with existing intervals for a task before create new interval
 export const checkNewIntervalOverlap = async (startTime, endTime, taskId) => {
   try {
-    const timestamps = await getTimestampByTaskId(taskId);
-
-    if (!timestamps || timestamps.length === 0) return false;
-
-    const sorted = timestamps.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-    const intervals = [];
-    for (let i = 0; i < sorted.length; i++) {
-      const current = sorted[i];
-      if (current.type === 'start') {
-        const end = sorted.slice(i + 1).find((ts) => ts.type === 'end');
-        if (end) {
-          intervals.push({
-            start: new Date(current.timestamp).getTime(),
-            end: new Date(end.timestamp).getTime(),
-          });
-        }
-      }
-    }
-
-    const newInterval = {
-      start: new Date(startTime).getTime(),
-      end: new Date(endTime).getTime(),
-    };
-    intervals.push(newInterval);
-
-    for (let i = 0; i < intervals.length; i++) {
-      const a = intervals[i];
-      for (let j = i + 1; j < intervals.length; j++) {
-        const b = intervals[j];
-        if (a.start < b.end && a.end > b.start) {
-          if (i === intervals.length - 1 || j === intervals.length - 1) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
+    const res = await axios.get(`${API_URL}/timestamps/isoverlapping`, {
+      params: {taskId: task, startTime: start, endTime: end },
+    });
+    const isOverlapping = res.data;
+    return isOverlapping;
   } catch (error) {
     console.error('Error checking interval overlap:', error);
     return false;

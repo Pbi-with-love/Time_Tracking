@@ -149,7 +149,7 @@ const IntervalSelectorActivityList = ({
       const taskInfo = await getTaskDetailsIntervals({
         start: startTime,
         end: endTime,
-        task: selectedTask,
+        task: selectedTask._id,
       });
 
       setTaskActivityDetails(taskInfo.activityIntervals || []);
@@ -250,7 +250,7 @@ const IntervalSelectorActivityList = ({
       const taskInfo = await getTaskDetailsIntervals({
         start: startTime,
         end: endTime,
-        task: taskDetails,
+        task: taskDetails._id,
       });
 
       setTaskActivityDetails(taskInfo.activityIntervals || []);
@@ -274,7 +274,7 @@ const IntervalSelectorActivityList = ({
         const taskInfo = await getTaskDetailsIntervals({
           start: startTime,
           end: endTime,
-          task: selectedTask,
+          task: selectedTask._id,
         });
         setTaskActivityDetails(taskInfo.activityIntervals || []);
         setTaskDetails(taskInfo);
