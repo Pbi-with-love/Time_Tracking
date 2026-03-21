@@ -57,7 +57,7 @@ export const createTimestamp = async (req, res, next) => {
     const validatedTimestamp = await timestampCreateValidate({
       task,
       type,
-      timestamp
+      timestamp,
     });
 
     const newTs = await createTimestampCached(validatedTimestamp);
@@ -68,14 +68,18 @@ export const createTimestamp = async (req, res, next) => {
   }
 };
 
-// UPDATE timestamp fully
+// UPDATE timestamp
 export const updateTimestamp = async (req, res, next) => {
   try {
-    const { task, type, timestamp } = req.body;
+    const { timestamp } = req.body;
 
-    const updatedField = await timestampUpdateValidate({task, type, timestamp});
+    if (!timestamp || isNaN(new Date(timestamp))) {
+      throw new AppError("Invalid timestamp", 400);
+    }
 
-    const updatedTs = await updateTimestampCached(req.params.id, updatedField);
+    const updatedTs = await updateTimestampCached(req.params.id, {
+      timestamp,
+    });
 
     if (!updatedTs) throw new AppError("Timestamp not found", 404);
     res.status(200).json(updatedTs);
@@ -94,5 +98,3 @@ export const deleteTimestamp = async (req, res, next) => {
     next(err);
   }
 };
-
-

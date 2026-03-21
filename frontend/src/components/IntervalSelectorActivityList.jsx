@@ -22,6 +22,7 @@ import {
   checkOverlap,
   updateTimestampById,
   getTimestampById,
+  createTimestampWithCustomTime
 } from "../api/Timestamps";
 import {
   formattedTime,
@@ -229,7 +230,7 @@ const IntervalSelectorActivityList = ({
 
         if (!editingInterval.endTsId) {
           const newTs = await createTimestampWithCustomTime(
-            taskDetails._id,
+            taskDetails.id,
             formattedEnd,
             1
           );
@@ -250,7 +251,7 @@ const IntervalSelectorActivityList = ({
       const taskInfo = await getTaskDetailsIntervals({
         start: startTime,
         end: endTime,
-        task: taskDetails._id,
+        task: selectedTask._id,
       });
 
       setTaskActivityDetails(taskInfo.activityIntervals || []);
@@ -573,7 +574,7 @@ const IntervalSelectorActivityList = ({
           <div className="bg-neutral-900 px-6 py-3 md:p-3 rounded-2xl shadow-lg w-[90%] md:w-[500px] relative">
             <AddTimestampInterval
               onClose={() => setIsCreateIntervalOpen(false)}
-              taskId={taskDetails._id}
+              taskId={taskDetails.id}
               onSuccess={onSuccess}
               onError={onError}
               taskActivityDetails={taskActivityDetails}

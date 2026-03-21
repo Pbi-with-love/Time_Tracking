@@ -50,6 +50,7 @@ const AddTimestampInterval = ({ onClose, taskId, onSuccess, onError, taskActivit
         start: "",
         end: ""
     });
+    const [isLoading, setIsLoading] = useState(false);
 
     const createInterval = async (start, end, taskId) => {
         if (new Date(start) >= new Date(end)) {
@@ -61,20 +62,22 @@ const AddTimestampInterval = ({ onClose, taskId, onSuccess, onError, taskActivit
             onError("Please select both start and end times!");
             return;
         }
-
+        if (isLoading) return;
+        setIsLoading(true)
         try {
-            const isOverlapping = await checkNewIntervalOverlap(new Date(start), new Date(end), taskId);
+            const isOverlapping = await checkNewIntervalOverlap({start: new Date(start), end: new Date(end), taskId});
             if (isOverlapping) {
+                setIsLoading(false);
                 onError("The new interval overlaps with existing intervals!");
                 return;
             }
             const formattedStart = formatTimestampForDB(start);
             const formattedEnd = formatTimestampForDB(end);
-            const createStartTimeProcess = await createTimestampWithCustomTime(taskId, formattedStart, 0);
+            const createStartTimeProcess = await createTimestampWithCustomTime(taskId, formattedStart, "start");
             const createStartTime = await getTimestampById(createStartTimeProcess._id);
             setTimestamps(prev => [...prev, createStartTime]);
 
-            const createEndTimeProcess = await createTimestampWithCustomTime(taskId, formattedEnd, 1);
+            const createEndTimeProcess = await createTimestampWithCustomTime(taskId, formattedEnd, "end");
             const createEndTime = await getTimestampById(createEndTimeProcess._id);
             setTimestamps(prev => [...prev, createEndTime]);
 
@@ -82,7 +85,7 @@ const AddTimestampInterval = ({ onClose, taskId, onSuccess, onError, taskActivit
             const taskInfo = await getTaskDetailsIntervals({
                 start: new Date(start),
                 end: new Date(end),
-                task: taskDetails._id
+                task: taskDetails.id
             });
 
             setTaskActivityDetails(taskInfo.activityIntervals || []);
@@ -92,6 +95,8 @@ const AddTimestampInterval = ({ onClose, taskId, onSuccess, onError, taskActivit
         } catch (error) {
             console.error(error);
             onError("Failed to create interval!");
+        } finally {
+            setIsLoading(false);
         }
     };
 

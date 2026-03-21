@@ -52,12 +52,13 @@ export const createTimestamps = async (taskId, type) => {
   }
 };
 
-export const createTimestampWithCustomTime = async (taskId, customTimestamp, type = 1) => {
+export const createTimestampWithCustomTime = async (taskId, customTimestamp, type) => {
   try {
+    console.log({customTimestamp, taskId, type})
     const res = await axios.post(`${API_URL}/timestamps`, {
       timestamp: customTimestamp,
       task: taskId,
-      type: type,
+      type
     });
 
     return res.data;
@@ -351,7 +352,7 @@ export const getTaskDetailsIntervals = async ({ start, end, task }) => {
 };
 
 // Calculate statistics for a task
-export const getTaskStats = async (taskId) => {
+export const getTaskStats = async () => {
   try {
     const res = await axios.get(`${API_URL}/tasks/taskstats`);
     return res.data
@@ -391,24 +392,15 @@ export const checkOverlap = (intervals) => {
   return flags;
 };
 
-// export const checkNewIntervalOverlap = async (startTime, endTime, taskId) => {
-//   try {
-//     const timestamps = await getTimestampsByPeriod({period, startTime, endTime, taskId});
-//     if (timestamps.length > 0) return false;
-//     return true;
-//   } catch (error) {
-//     console.error('Error checking interval overlap:', error);
-//     return false;
-//   }
-// }
 
 // Check if a new interval overlaps with existing intervals for a task before create new interval
-export const checkNewIntervalOverlap = async (startTime, endTime, taskId) => {
+export const checkNewIntervalOverlap = async ({start, end, taskId}) => {
   try {
     const res = await axios.get(`${API_URL}/timestamps/isoverlapping`, {
-      params: {taskId: task, startTime: start, endTime: end },
+      params: {taskId, start, end},
     });
     const isOverlapping = res.data;
+    console.log("is overlapping", isOverlapping)
     return isOverlapping;
   } catch (error) {
     console.error('Error checking interval overlap:', error);

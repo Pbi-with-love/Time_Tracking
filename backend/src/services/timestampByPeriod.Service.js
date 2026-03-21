@@ -11,7 +11,7 @@ import {
 } from "./cache/timestampCache.Service.js";
 
 import { getTasksCachedByMultipleIds } from "./cache/taskCache.Service.js";
-import { getTimestampsForTask } from "../controllers/TimestampController.js"
+import { getTimestampsForTask } from "../controllers/TimestampController.js";
 
 import mongoose from "mongoose";
 
@@ -209,7 +209,6 @@ export const totalTimeActiveForAllTasksDaily = async ({
   return totalPerDay;
 };
 
-
 export const totalTimeActiveForAllTasksPerHour = async () => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
     period: "today",
@@ -222,8 +221,7 @@ export const totalTimeActiveForAllTasksPerHour = async () => {
   for (const t of timestamps) {
     if (t.type === "start") {
       tsWithoutEnd.add(t._id.toString());
-    }
-    else if (t.type === "end" && t.startRef && t.startRef._id) {
+    } else if (t.type === "end" && t.startRef && t.startRef._id) {
       tsWithoutEnd.delete(t.startRef._id.toString());
       let startTs = new Date(
         t.startRef.timestamp < start ? start : t.startRef.timestamp,
@@ -302,7 +300,11 @@ export const totalTimeActiveForEachTag = async ({
 };
 
 // Get the day with the most completed tasks in a period
-export const getMostProductive = async ({ period, startTime, endTime } = {}) => {
+export const getMostProductive = async ({
+  period,
+  startTime,
+  endTime,
+} = {}) => {
   if (period === "today") return { day: null, count: 0 };
 
   const { timestamps } = await getTimestampsByPeriod({
@@ -342,7 +344,6 @@ export const getMostProductive = async ({ period, startTime, endTime } = {}) => 
   return { day: dayFormatted, weekday, count };
 };
 
-
 /**
  * This function returns the longest time streak during which at least one task is active.
  * The algorithm used in this function: the first ts with type start will be assigned its timestamp to the variable streakStart
@@ -354,7 +355,11 @@ export const getMostProductive = async ({ period, startTime, endTime } = {}) => 
  * currentStreakTasks is a set use to track how many task have been activated during this streak by storing all the ts type start.
  * For example S1 -> S2 -> S3 -> E1 -> E3 -> E2 have 3 startTs which means the number of task active in this streak is currentStreakTasks.size == 3
  */
-export const getMostActiveStreak = async ({ period, startTime, endTime } = {}) => {
+export const getMostActiveStreak = async ({
+  period,
+  startTime,
+  endTime,
+} = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
     period,
     startTime,
@@ -406,7 +411,11 @@ export const getMostActiveStreak = async ({ period, startTime, endTime } = {}) =
   return { maxStreak, maxTotalTaskActiveDuringStreak };
 };
 
-export const getTaskStartStats = async ({ period, startTime, endTime } = {}) => {
+export const getTaskStartStats = async ({
+  period,
+  startTime,
+  endTime,
+} = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
     period,
     startTime,
@@ -427,15 +436,23 @@ export const getTaskStartStats = async ({ period, startTime, endTime } = {}) => 
 
   const days = Object.keys(activePerDay).length;
   const avgTasksPerDay =
-    days > 0 ? Object.values(activePerDay).reduce((sum, set) => sum + set.size, 0) / days : 0;
-
+    days > 0
+      ? Object.values(activePerDay).reduce((sum, set) => sum + set.size, 0) /
+        days
+      : 0;
 
   return { totalActiveStarts, avgTasksPerDay };
 };
 
 // Check if a new interval overlaps with existing intervals for a task before create new interval
-export const checkNewIntervalOverlap = async ({startTime, endTime, taskId} = {}) => {
-  const timestamps = await getTimestampsForTask(taskId);
+export const checkNewIntervalOverlap = async ({
+  startTime,
+  endTime,
+  taskId,
+} = {}) => {
+  const timestamps = await Timestamp.find({ task: taskId })
+    .sort({ timestamp: 1 })
+    .lean();
 
   if (!timestamps || timestamps.length === 0) return false;
 
@@ -445,9 +462,9 @@ export const checkNewIntervalOverlap = async ({startTime, endTime, taskId} = {})
 
   for (const t of timestamps) {
     const time = new Date(t.timestamp).getTime();
-    if (t.type == "start") {
+    if (t.type === "start") {
       prevStart = time;
-    } else if (t.type == "end" && prevStart != null) {
+    } else if (t.type === "end" && prevStart != null) {
       let startTs = prevStart;
       let endTs = new Date(t.timestamp).getTime();
 
@@ -457,8 +474,7 @@ export const checkNewIntervalOverlap = async ({startTime, endTime, taskId} = {})
   }
 
   return false;
-}
-
+};
 
 // // Check if a new interval overlaps with existing intervals for a task before create new interval
 // export const checkNewIntervalOverlap = async (startTime, endTime, taskId) => {
