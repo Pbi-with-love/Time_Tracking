@@ -6,3 +6,7 @@ export const allTagsKey = () => `tags:all`;
 
 export const timestampKey = (timestampId) => `timestamp:${timestampId}`;
 export const allTimestampsKey = () => `timestamps:all`;
+
+export const otpKey = (email) => `otp:${email}`;
+export const otpRateLimitKey = (email) => `rate:otp:${email}`;
+export const loginRateLimitKey = (ip) => `rate:login:${ip}`;
