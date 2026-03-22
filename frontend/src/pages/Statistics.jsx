@@ -67,7 +67,7 @@ const Statistics = () => {
     const { theme } = useContext(SettingsContext);
   const bgClass = theme === 'dark'
     ? 'bg-neutral-900'
-    : 'bg-orange-300';
+    : '';
 
   const { tasks, tags, fetchData, timestamps } = useContext(TasksAndTagsContext)
 

@@ -23,7 +23,7 @@ const Dashboard = () => {
 
     const bgClass = theme === 'dark' 
     ? 'bg-neutral-900' 
-    : 'bg-orange-300';
+    : '';
 
     const neon = {
         timer: 'text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400',

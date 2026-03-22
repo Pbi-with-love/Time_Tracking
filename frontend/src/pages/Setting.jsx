@@ -9,7 +9,7 @@ const Setting = () => {
 
   const bgClass = theme === 'dark'
     ? 'bg-neutral-900'
-    : 'bg-orange-300';
+    : '';
 
   if (loading) return <div>Loading settings...</div>;
 
@@ -66,32 +66,10 @@ const Setting = () => {
           ))}
         </div>
 
-        {/* Alternative mode toggle */}
-        <div className="relative w-fit flex bg-neutral-800 rounded-lg py-1 cursor-pointer">
-          {/* slider */}
-          <div
-            className={`w-1/2 absolute top-1 bottom-1 rounded-md transition-all duration-300 bg-gradient-to-b 
-            from-green-400 via-cyan-400 to-blue-500 ${alternative === 0 ? "left-0" : "left-1/2"
-              }`}
-          ></div>
-
-          {["multi", "single"].map((item) => (
-            <div
-              key={item}
-              onClick={() =>
-                item === "multi" ? toggleAlternative(0) : toggleAlternative(1)
-              }
-              className={`text-center z-10 py-2 px-4 w-32 text-sm font-medium transition-colors duration-300 
-                ${alternative === (item === "multi" ? 0 : 1) ? "text-white" : "text-gray-300"} flex items-center justify-center gap-2`}
-            >
-              {item === "multi" ? <Layers /> : <Layers2 />}
-              {item === "multi" ? "Multi-task Active" : "Single-task Only"}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
 };
 
 export default Setting;
+

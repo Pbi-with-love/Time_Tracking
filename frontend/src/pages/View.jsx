@@ -22,7 +22,7 @@ export default function View() {
   const { theme } = useContext(SettingsContext);
   const bgClass = theme === 'dark'
     ? 'bg-neutral-900'
-    : 'bg-orange-300';
+    : '';
 
 
   const {

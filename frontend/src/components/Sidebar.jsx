@@ -19,7 +19,7 @@ const Sidebar = () => {
         { icon: <Eye size={20} />, label: "View", path: "/view" },
         { icon: <TrendingUp size={20} />, label: "Statistics", path: "/statistics" },
         { icon: <Info size={20} />, label: "About Me", path: "/about" },
-        { icon: <Settings size={20} />, label: "Setting", path: "/setting" }
+        // { icon: <Settings size={20} />, label: "Setting", path: "/setting" }
     ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);

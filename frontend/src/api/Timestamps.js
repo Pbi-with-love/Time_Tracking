@@ -400,7 +400,6 @@ export const checkNewIntervalOverlap = async ({start, end, taskId}) => {
       params: {taskId, start, end},
     });
     const isOverlapping = res.data;
-    console.log("is overlapping", isOverlapping)
     return isOverlapping;
   } catch (error) {
     console.error('Error checking interval overlap:', error);
