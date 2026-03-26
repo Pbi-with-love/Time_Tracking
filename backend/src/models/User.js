@@ -1,9 +1,15 @@
 const userSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, match: [/^\S+@\S+\.\S+$/, "Invalid email"], trim: true },
     passwordHash: { type: String, required: true },
+    username: { type: String, required: true, unique: true, trim: true },
 
-    name: String,
+    name: { type: String, trim: true, },
+
+    dateOfBirth: {
+      type: Date,
+    },
+
 
     roles: {
       type: [String],
@@ -21,5 +27,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+userSchema.index({ email: 1, username: 1 });
 
 export default mongoose.model("User", userSchema);

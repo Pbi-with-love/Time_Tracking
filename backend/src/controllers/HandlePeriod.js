@@ -20,7 +20,6 @@ import {
 import {
   getTagsOfInterest
 } from "../services/tagInterval.Service.js"
-import { AppError } from "../utils/AppError.js";
 
 export const handleGetTimestampsByPeriod = async (req, res, next) => {
   try {
