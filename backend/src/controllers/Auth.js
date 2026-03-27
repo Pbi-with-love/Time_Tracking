@@ -93,6 +93,7 @@ export const verify = async (req, res) => {
   });
 };
 
+// Login and returning token 
 export const login = async (req, res) => {
   const { loginId, password } = req.body;
   if (!loginId || !password) {
@@ -126,7 +127,7 @@ export const login = async (req, res) => {
 
   res.cookie("token", token, {
     httpOnly: true,
-    secure: true,
+    secure: false, //dev env only, when deploy change to true 
     sameSite: "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -139,7 +140,7 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: true,
+    secure: false, //dev env only, when deploy change to true 
     sameSite: "strict",
   });
 
