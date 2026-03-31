@@ -120,7 +120,7 @@ export const login = async (req, res, next) => {
       throw new AppError("Invalid credentials", 401);
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await bcrypt.compare(String(password), user.passwordHash);
     if (!isMatch) {
       throw new AppError("Invalid credentials", 401);
     }
