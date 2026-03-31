@@ -1,9 +1,11 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import Logo from './Logo'
 import { Bell, Home, Search, TrendingUp, Eye, Menu, Info, Settings } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import avatar from '../assets/avatar.jpg'
 import { SettingsContext } from '../context/SettingsContext'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
     const { theme } = useContext(SettingsContext);
@@ -13,6 +15,13 @@ const Sidebar = () => {
     const placeholderClass = theme === 'dark' ? 'placeholder-gray-500' : 'placeholder-gray-700';
 
     const [isOpen, setIsOpen] = useState(true);
+    const [activePath, setActivePath] = useState("/");
+    const location = useLocation();
+
+
+    useEffect(() => {
+        setActivePath(location.pathname);
+    }, [location.pathname]);
 
     const mainMenuItems = [
         { icon: <Home size={20} />, label: "Dashboard", path: "/" },
@@ -68,20 +77,34 @@ const Sidebar = () => {
                             <li key={index}>
                                 <NavLink
                                     to={item.path}
-                                    onClick={toggleSidebar}
-                                    className={({ isActive }) =>
-                                        `w-full flex px-3 py-2.5 rounded-lg ${isActive
-                                            ? theme === 'dark' ? 'bg-neutral-800 text-white' : ''
-                                            : theme === 'dark'
-                                                ? 'text-gray-400 hover:bg-neutral-800 hover:text-white'
-                                                : ''
-                                        }`
-                                    }
+                                    onClick={() => {
+                                        toggleSidebar();
+                                        setActivePath(item.path);
+                                    }}
+                                    className="relative w-full flex px-3 py-2.5 rounded-lg"
                                 >
-                                    <div className="flex gap-2 items-center">
+
+                                    {/* 🔥 animated background */}
+                                    <AnimatePresence>
+                                        {activePath === item.path && (
+                                            <motion.div
+                                                layoutId="sidebar-active"
+                                                className="absolute inset-0 rounded-lg bg-neutral-800"
+                                                transition={{
+                                                    type: "spring",
+                                                    stiffness: 500,
+                                                    damping: 35
+                                                }}
+                                            />
+                                        )}
+                                    </AnimatePresence>
+
+                                    {/* content */}
+                                    <div className="relative z-10 flex gap-2 items-center">
                                         <div>{item.icon}</div>
                                         <span>{item.label}</span>
                                     </div>
+
                                 </NavLink>
                             </li>
                         ))}
