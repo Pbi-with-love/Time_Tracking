@@ -10,6 +10,5 @@ export const allTimestampsKey = () => `timestamps:all`;
 export const otpKey = (email) => `otp:${email}`;
 export const otpRateLimitKey = (email) => `rate:otp:${email}`;
 export const loginRateLimitKey = (ip) => `rate:login:${ip}`;
-export const blacklistKey = (jti) => `bl:${jti}`;
 
 export const refreshTokenKey = (jti) => `rt:${jti}`

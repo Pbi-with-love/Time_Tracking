@@ -15,3 +15,4 @@ router.use('/timesfortask', authMiddleware, timeForTaskRoutes);
 router.use('/auth', authRoutes)
 
 export default router;
+
