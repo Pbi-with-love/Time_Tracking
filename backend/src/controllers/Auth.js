@@ -217,7 +217,7 @@ export const refresh = async (req, res, next) => {
 
     const exist = await redis.get(refreshTokenKey(decoded.jti));
     if (!exist) {
-      throw new AppError("Refresh token revoked", 401);
+      throw new AppError("Refresh token revoked", 401); 
     }
 
     /** Avoid racecondition: 

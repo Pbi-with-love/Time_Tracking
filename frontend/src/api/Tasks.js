@@ -1,10 +1,8 @@
-import axios from "axios";
-
-const API_URL = "http://localhost:3000/api";
+import { api } from "./axiosClient"
 
 export const getAllTasks = async () => {
   try {
-    const res = await axios.get(`${API_URL}/tasks`);
+    const res = await api.get(`/tasks`);
     return res.data;
   } catch (error) {
     console.error("Failed to fetch tasks ", error);
@@ -14,7 +12,7 @@ export const getAllTasks = async () => {
 
 export const getTaskById = async (taskId) => {
   try {
-    const res = await axios.get(`${API_URL}/tasks/${taskId}`);
+    const res = await api.get(`/tasks/${taskId}`);
     return res.data;
   } catch (error) {
     console.error("Failed to fetch task by id ", error);
@@ -24,7 +22,7 @@ export const getTaskById = async (taskId) => {
 
 export const createTask = async (title, description, tagIds) => {
   try {
-    const res = await axios.post(`${API_URL}/tasks`, {
+    const res = await api.post(`/tasks`, {
       title,
       description,
       tags: tagIds,
@@ -38,7 +36,7 @@ export const createTask = async (title, description, tagIds) => {
 
 export const updateTask = async (taskId, updatedFields) => {
   try {
-    const res = await axios.patch(`${API_URL}/tasks/${taskId}`, updatedFields);
+    const res = await api.patch(`/tasks/${taskId}`, updatedFields);
     return res.data;
   } catch (error) {
     console.error("Failed to update task ", error);
@@ -48,7 +46,7 @@ export const updateTask = async (taskId, updatedFields) => {
 
 export const deleteTask = async (taskId) => {
   try {
-    const res = await axios.delete(`${API_URL}/tasks/${taskId}`);
+    const res = await api.delete(`/tasks/${taskId}`);
     return res.data;
   } catch (error) {
     console.error("Failed to delete task ", error);
@@ -58,7 +56,7 @@ export const deleteTask = async (taskId) => {
 
 export const deleteTagInTaskByTagId = async (tagId) => {
   try {
-    const res = await axios.get(`${API_URL}/tasks/tag/${tagId}`);
+    const res = await api.get(`/tasks/tag/${tagId}`);
     const tasksWithTag = res.data;
     
     const updateTasks = tasksWithTag.map((t) => {

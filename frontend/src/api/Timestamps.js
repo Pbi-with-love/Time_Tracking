@@ -1,13 +1,10 @@
-import axios from 'axios';
-
+import { api } from "./axiosClient"
 import { getAllTags } from './Tags';
 import { getAllTasks } from './Tasks';
 
-const API_URL = 'http://localhost:3000/api';
-
 export const getAllTimestamps = async () => {
   try {
-    const res = await axios.get(`${API_URL}/timestamps`);
+    const res = await api.get(`/timestamps`);
     return res.data;
   } catch (error) {
     console.error('Failed to fetch timestamps ', error);
@@ -17,7 +14,7 @@ export const getAllTimestamps = async () => {
 
 export const getTimestampByTaskId = async (taskId) => {
   try {
-    const res = await axios.get(`${API_URL}/timesfortask/${taskId}`);
+    const res = await api.get(`/timesfortask/${taskId}`);
     return res.data;
   } catch (error) {
     console.error('Failed to fetch timestamp by task id ', error);
@@ -27,7 +24,7 @@ export const getTimestampByTaskId = async (taskId) => {
 
 export const getTimestampById = async (id) => {
   try {
-    const res = await axios.get(`${API_URL}/timestamps/${id}`);
+    const res = await api.get(`/timestamps/${id}`);
     return res.data;
   } catch (error) {
     console.error('Failed to fetch timestamp by id ', error);
@@ -39,7 +36,7 @@ export const createTimestamps = async (taskId, type) => {
   try {
     const timestamp = new Date();
     // Avoid the old version error
-    const res = await axios.post(`${API_URL}/timestamps`, {
+    const res = await api.post(`/timestamps`, {
       timestamp,
       task: taskId,
       type,
@@ -55,7 +52,7 @@ export const createTimestamps = async (taskId, type) => {
 export const createTimestampWithCustomTime = async (taskId, customTimestamp, type) => {
   try {
     console.log({customTimestamp, taskId, type})
-    const res = await axios.post(`${API_URL}/timestamps`, {
+    const res = await api.post(`/timestamps`, {
       timestamp: customTimestamp,
       task: taskId,
       type
@@ -70,7 +67,7 @@ export const createTimestampWithCustomTime = async (taskId, customTimestamp, typ
 
 export const updateTimestampById = async (timestampId, updatedFields) => {
   try {
-    const res = await axios.patch(`${API_URL}/timestamps/${timestampId}`, updatedFields);
+    const res = await api.patch(`/timestamps/${timestampId}`, updatedFields);
     return res.data;
   } catch (error) {
     console.error('Failed to update this timestamp ', error);
@@ -80,7 +77,7 @@ export const updateTimestampById = async (timestampId, updatedFields) => {
 
 export const deleteTimestamp = async (timestampId) => {
   try {
-    const res = await axios.delete(`${API_URL}/timestamps/${timestampId}`);
+    const res = await api.delete(`/timestamps/${timestampId}`);
     return res.data;
   } catch (error) {
     console.error('Failed to delete the timestamp of this task ', error);
@@ -92,7 +89,7 @@ export const deleteTimestamp = async (timestampId) => {
 export const getOrderedTasks = async (tasks) => {
   try {
     const ids = tasks.map((t) => t._id).join(',');
-    const res = await axios.get(`${API_URL}/tasks/orderedtasks`, { params: { ids } });
+    const res = await api.get(`/tasks/orderedtasks`, { params: { ids } });
     return res.data;
   } catch (error) {
     console.error('Failed to get ordered tasks ', error);
@@ -110,7 +107,7 @@ export const getTimestampsByPeriod = async ({ period, startTime, endTime, taskId
     if (endTime) params.endTime = endTime;
     if (taskId) params.taskId = taskId;
 
-    const res = await axios.get(`${API_URL}/timestamps/timestampsbyperiod`, { params });
+    const res = await api.get(`/timestamps/timestampsbyperiod`, { params });
     return res.data;
   } catch (error) {
     console.error('Failed to get timestamps by period ', error);
@@ -128,7 +125,7 @@ export const totalTimeActiveForEachTask = async ({ taskId, period, startTime, en
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforeachtask`, {
+    const res = await api.get(`/timestamps/totaltimeactiveforeachtask`, {
       params,
     });
     return res.data.totalTime;
@@ -147,7 +144,7 @@ export const totalTimeActiveForAllTask = async ({ period, startTime, endTime } =
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltask`, {
+    const res = await api.get(`/timestamps/totaltimeactiveforalltask`, {
       params,
     });
     return res.data.totalTime;
@@ -172,7 +169,7 @@ export const totalTimeActiveForEachTaskDaily = async ({
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforeachtaskdaily`, {
+    const res = await api.get(`/timestamps/totaltimeactiveforeachtaskdaily`, {
       params,
     });
     return res.data.totalTimePerDay;
@@ -191,7 +188,7 @@ export const totalTimeActiveForAllTasksDaily = async ({ period, startTime, endTi
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltasksdaily`, {
+    const res = await api.get(`/timestamps/totaltimeactiveforalltasksdaily`, {
       params,
     });
     return res.data.totalTimePerDay;
@@ -204,7 +201,7 @@ export const totalTimeActiveForAllTasksDaily = async ({ period, startTime, endTi
 // Calculate total active time per hour for all tasks today
 export const totalTimeActiveForAllTasksPerHour = async () => {
   try {
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforalltasksperhour`);
+    const res = await api.get(`/timestamps/totaltimeactiveforalltasksperhour`);
     const hours = res.data.hours;
     return hours;
   } catch (error) {
@@ -222,7 +219,7 @@ export const totalTimeActiveForEachTag = async ({ period, startTime, endTime }) 
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/totaltimeactiveforeachtag`, { params });
+    const res = await api.get(`/timestamps/totaltimeactiveforeachtag`, { params });
     const tagTotals = res.data.tagTotals;
 
     return tagTotals;
@@ -243,7 +240,7 @@ export const getMostProductive = async ({ period, startTime, endTime }) => {
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/mostproductiveday`, { params });
+    const res = await api.get(`/timestamps/mostproductiveday`, { params });
     const { day, weekday, count } = res.data.mostProductiveDay;
 
     return { day, weekday, count };
@@ -262,7 +259,7 @@ export const getMostActiveStreak = async ({ period, startTime, endTime }) => {
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/mostactivestreak`, { params });
+    const res = await api.get(`/timestamps/mostactivestreak`, { params });
     const { maxStreak, maxTotalTaskActiveDuringStreak } = res.data.mostActiveStreak;
 
     return { maxStreak, maxTotalTaskActiveDuringStreak };
@@ -281,7 +278,7 @@ export const getTaskStartStats = async ({ period, startTime, endTime }) => {
     if (startTime) params.startTime = startTime;
     if (endTime) params.endTime = endTime;
 
-    const res = await axios.get(`${API_URL}/timestamps/taskstartstats`, { params });
+    const res = await api.get(`/timestamps/taskstartstats`, { params });
     const { totalActiveStarts, avgTasksPerDay } = res.data.taskStartStats;
 
     return { totalActiveStarts, avgTasksPerDay };
@@ -294,7 +291,7 @@ export const getTaskStartStats = async ({ period, startTime, endTime }) => {
 // Get tasks with active time within a given start and end interval
 export const getTasksOfInterest = async ({ start, end }) => {
   try {
-    const res = await axios.get(`${API_URL}/tasks/tasksofinterest`, {
+    const res = await api.get(`/tasks/tasksofinterest`, {
       params: { start, end },
     });
     const taskOfInterest = res.data.taskOfInterest;
@@ -309,7 +306,7 @@ export const getTasksOfInterest = async ({ start, end }) => {
 // Aggregate tags with total active time and number of tasks for a given period
 export const getTagsOfInterest = async ({ start, end }) => {
   try {
-    const res = await axios.get(`${API_URL}/tags/tagsofinterest`, {
+    const res = await api.get(`/tags/tagsofinterest`, {
       params: { start, end },
     });
     const tagsOfInterest = res.data.tagsOfInterest;
@@ -325,7 +322,7 @@ export const getTagsOfInterest = async ({ start, end }) => {
 // Generate daily bar chart data for a task within a date range, adjusted to Finland timezone
 export const getTaskDailyBarChart = async ({ task, start, end }) => {
   try {
-    const res = await axios.get(`${API_URL}/tasks/taskdailybarchart`, {
+    const res = await api.get(`/tasks/taskdailybarchart`, {
       params: {taskId: task, start, end },
     });
     const taskDaily = res.data.taskDaily;
@@ -340,7 +337,7 @@ export const getTaskDailyBarChart = async ({ task, start, end }) => {
 // Get detailed activity intervals for a specific task within a time range
 export const getTaskDetailsIntervals = async ({ start, end, task }) => {
   try {
-    const res = await axios.get(`${API_URL}/tasks/taskdetailsintervals`, {
+    const res = await api.get(`/tasks/taskdetailsintervals`, {
       params: {taskId: task, startTime: start, endTime: end },
     });
     const activityIntervals = res.data;
@@ -354,7 +351,7 @@ export const getTaskDetailsIntervals = async ({ start, end, task }) => {
 // Calculate statistics for a task
 export const getTaskStats = async () => {
   try {
-    const res = await axios.get(`${API_URL}/tasks/taskstats`);
+    const res = await api.get(`/tasks/taskstats`);
     return res.data
   } catch (error) {
     console.error('Failed to get task stats ', error);
@@ -396,7 +393,7 @@ export const checkOverlap = (intervals) => {
 // Check if a new interval overlaps with existing intervals for a task before create new interval
 export const checkNewIntervalOverlap = async ({start, end, taskId}) => {
   try {
-    const res = await axios.get(`${API_URL}/timestamps/isoverlapping`, {
+    const res = await api.get(`/timestamps/isoverlapping`, {
       params: {taskId, start, end},
     });
     const isOverlapping = res.data;

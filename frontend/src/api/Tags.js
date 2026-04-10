@@ -1,10 +1,8 @@
-import axios from "axios";
-
-const API_URL = "http://localhost:3000/api";
+import { api } from "./axiosClient"
 
 export const getAllTags = async () => {
   try {
-    const res = await axios.get(`${API_URL}/tags`);
+    const res = await api.get(`/tags`);
     return res.data;
   } catch (error) {
     console.error("Failed to fetch tags: ", error);
@@ -14,7 +12,7 @@ export const getAllTags = async () => {
 
 export const getTagByID = async (tagId) => {
   try {
-    const res = await axios.get(`${API_URL}/tags/${tagId}`);
+    const res = await api.get(`/tags/${tagId}`);
     return res.data;
   } catch (error) {
     console.error("Failed to fetch tag by id ", error);
@@ -24,7 +22,7 @@ export const getTagByID = async (tagId) => {
 
 export const createTags = async (title, description) => {
   try {
-    const res = await axios.post(`${API_URL}/tags`, {
+    const res = await api.post(`/tags`, {
       title,
       description,
     });
@@ -37,7 +35,7 @@ export const createTags = async (title, description) => {
 
 export const updateTag = async (tagId, updatedFields) => {
   try {
-    const res = await axios.patch(`${API_URL}/tags/${tagId}`, updatedFields);
+    const res = await api.patch(`/tags/${tagId}`, updatedFields);
     return res.data;
   } catch (error) {
     console.error("Failed to update tag ", error);
@@ -47,7 +45,7 @@ export const updateTag = async (tagId, updatedFields) => {
 
 export const deleteTag = async (tagId) => {
   try {
-    const res = await axios.delete(`${API_URL}/tags/${tagId}`);
+    const res = await api.delete(`/tags/${tagId}`);
     return res.data;
   } catch (error) {
     console.error("Failed to delete tag ", error);
