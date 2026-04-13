@@ -61,7 +61,7 @@ api.interceptors.response.use(
       }).then((token) => {
         originalRequest.headers = {
           ...originalRequest.headers,
-          Authorization: `Bearer ${newToken}`,
+          Authorization: `Bearer ${token}`,
         };
         return api(originalRequest);
       });
