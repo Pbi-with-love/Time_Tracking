@@ -8,12 +8,14 @@ import { SettingsProvider } from './context/SettingsContext'
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <TasksAndTagsContextProvider>
-      <IntervalContextProvider>
-        <SettingsProvider>
-          <App />
-        </SettingsProvider>
-      </IntervalContextProvider>
-    </TasksAndTagsContextProvider>
+    <AuthContextProvider>
+      <TasksAndTagsContextProvider>
+        <IntervalContextProvider>
+          <SettingsProvider>
+            <App />
+          </SettingsProvider>
+        </IntervalContextProvider>
+      </TasksAndTagsContextProvider>
+    </AuthContextProvider>
   </BrowserRouter>
 )

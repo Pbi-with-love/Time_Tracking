@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect, useRef } from 'react'
 import { ChevronDown, Clock, Calendar, TrendingUp, CircleCheckBig, Clock9, ChartColumn, Tag, CalendarClock } from 'lucide-react'
 import { TasksAndTagsContext } from '@/context/TasksAndTagsContext'
+import { AuthContext } from '@/context/AuthContext'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +64,7 @@ const DateTimeInput = ({ label, value, onChange }) => {
 };
 
 const Statistics = () => {
+  const { isAuthenticated, loading } = useContext(AuthContext);
 
     const { theme } = useContext(SettingsContext);
   const bgClass = theme === 'dark'
@@ -194,8 +196,10 @@ const Statistics = () => {
       }
     }
 
+    if (loading || !isAuthenticated) return;
+
     fetchStatistics();
-  }, [periodOption, tasks, timestamps, tags]);
+  }, [periodOption, tasks, timestamps, tags, loading, isAuthenticated]);
 
 
   const [isExpanded, setIsExpanded] = useState(false);

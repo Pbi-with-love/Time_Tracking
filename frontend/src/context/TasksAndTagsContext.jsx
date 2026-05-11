@@ -1,11 +1,14 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import { getAllTags } from "@/api/Tags";
 import { getAllTasks } from "@/api/Tasks";
 import { getAllTimestamps } from "@/api/Timestamps";
+import { AuthContext } from "./AuthContext"
 
 export const TasksAndTagsContext = createContext();
 
 const TasksAndTagsContextProvider = ({ children }) => {
+    const { isAuthenticated, loading } = useContext(AuthContext);
+
     const [tasks, setTasks] = useState([])
     const [tags, setTags] = useState([])
     const [timestamps, setTimestamps] = useState([])
@@ -21,8 +24,10 @@ const TasksAndTagsContextProvider = ({ children }) => {
     }
 
     useEffect(() => {
-        fetchData()
-    }, [])
+        if (!loading && isAuthenticated) {
+            fetchData();
+        }
+    }, [loading, isAuthenticated])
 
     const value = {
         tasks,
