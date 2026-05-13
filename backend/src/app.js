@@ -8,8 +8,6 @@ import cookieParser from "cookie-parser";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
-
 const app = express();
 
 // Connect to database
@@ -32,9 +30,6 @@ app.get('/', (req, res) => {
   res.send('Welcome to the Time Tracking API');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
 
 // Error handler
 app.use(errorHandler);

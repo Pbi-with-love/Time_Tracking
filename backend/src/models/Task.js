@@ -3,7 +3,7 @@ const taskSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     description: { type: String, default: "" },
-    tags: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag", index: true }],
+    tags: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag" }],
   },
   { timestamps: true }
 );

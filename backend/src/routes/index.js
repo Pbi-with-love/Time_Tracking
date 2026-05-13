@@ -8,11 +8,15 @@ import { authMiddleware } from '../middlewares/authMiddleware.js'
 
 const router = express.Router();
 
-router.use('/tags', authMiddleware, tagRoutes);
-router.use('/tasks', authMiddleware, taskRoutes);
-router.use('/timestamps', authMiddleware, timestampRoutes);
-router.use('/timesfortask', authMiddleware, timeForTaskRoutes);
-router.use('/auth', authRoutes)
+router.use('/auth', authRoutes);
+
+// All routes below require authentication
+router.use(authMiddleware);
+
+router.use('/tags', tagRoutes);
+router.use('/tasks', taskRoutes);
+router.use('/timestamps', timestampRoutes);
+router.use('/timesfortask', timeForTaskRoutes);
 
 export default router;
 

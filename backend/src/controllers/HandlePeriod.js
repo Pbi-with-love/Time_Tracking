@@ -197,7 +197,6 @@ export const handleCheckNewIntervalOverlap = async (req, res, next) => {
     const isOverLap = await checkNewIntervalOverlap({taskId, startTime: start, endTime: end});
     return res.status(200).json({ isOverLap });
   } catch (err) {
-    console.log(err);
     next(err)
   }
 }

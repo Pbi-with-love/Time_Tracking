@@ -16,7 +16,6 @@ const AuthContextProvider = ({ children }) => {
             } catch (error) {
                 setIsAuthenticated(false);
                 console.error("Error to initial authenticate user ", error);
-                throw error;
             } finally {
                 setLoading(false);
             }

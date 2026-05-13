@@ -92,7 +92,7 @@ api.interceptors.response.use(
       failedQueue = [];
 
       setAccessToken(null);
-      window.location.href = '/login';
+      window.location.href = '/auth'; // Redirect to login page on refresh token failure
       return Promise.reject(refreshErr);
     } finally {
       isRefreshing = false;

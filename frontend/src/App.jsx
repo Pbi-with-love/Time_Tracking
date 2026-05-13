@@ -6,7 +6,7 @@ import View from './pages/View'
 import Statistics from './pages/Statistics'
 import About from './pages/About'
 import Setting from './pages/Setting'
-import Login from './pages/Login'
+import Authpage from './pages/Authpage'
 import { SettingsContext } from './context/SettingsContext'
 
 const App = () => {
@@ -16,11 +16,11 @@ const App = () => {
     : '';
   const location = useLocation();
 
-  const isLogin = location.pathname === "/login";
+  const isLogin = location.pathname === "/auth";
 
   return isLogin ? (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/auth" element={<Authpage />} />
     </Routes>
   ) : (
     <div className="md:flex">

@@ -1,9 +1,13 @@
 import { useContext, useState } from 'react'
 import { SettingsContext } from '../context/SettingsContext'
 import { User, Lock, Eye, EyeOff, Mail } from 'lucide-react'
-const Login = () => {
+import { useNavigate } from "react-router-dom";
+import Alert from '../components/Alert'
+import * as authApi from "../api/Auth"
+const Authpage = () => {
     const { theme } = useContext(SettingsContext);
 
+    const navigate = useNavigate();
     const bgClass = theme === 'dark'
         ? 'bg-neutral-900'
         : '';
@@ -19,6 +23,30 @@ const Login = () => {
 
     const [showRegisterForm, setShowRegisterForm] = useState(false);
 
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+    const onSuccess = (message) => setNotification({ show: true, message, type: 'success' });
+    const onError = (message) => setNotification({ show: true, message, type: 'error' });
+
+    const handleSubmitLogin = async (e) => {
+        e.preventDefault();
+        try {
+            await authApi.login({
+                loginId,
+                password: passwordLogin
+            });
+            onSuccess("Login successfully!");
+            navigate("/", { replace: true });
+        } catch (err) {
+            const message =
+                // axios error structure
+                err.response?.data?.message ||
+                "Login failed";
+            onError(message);
+        }
+    }
+
+
+
     return (
         <div className="flex items-center justify-center h-screen bg-black">
             <div
@@ -29,7 +57,7 @@ const Login = () => {
             >
                 {/* ----- Left Side - Login ----- */}
                 <div className="absolute top-0 left-0 w-1/2 h-full p-6 xs:p-8 rounded-lg flex items-center justify-center">
-                    <form className="flex w-[80%] flex-col gap-3">
+                    <form onSubmit={handleSubmitLogin} className="flex w-[80%] flex-col gap-3">
                         <p className="text-4xl font-medium mb-2">Login</p>
                         <p className="text-white text-sm mb-4">Don't have an account?<span onClick={() => setShowRegisterForm(!showRegisterForm)} className="underline ml-1 cursor-pointer text-blue-300">Sign up</span></p>
                         <div className="flex flex-col gap-5">
@@ -62,7 +90,7 @@ const Login = () => {
                                     }
                                 </button>
                             </div>
-                            <button className="mt-4 text-lg cursor-pointer bg-gradient-to-r rounded-lg from-purple-500 to-blue-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.7)] px-2 py-2 animate-gradient-x transition-all">Log in</button>
+                            <button type="submit" className="mt-4 text-lg cursor-pointer bg-gradient-to-r rounded-lg from-purple-500 to-blue-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.7)] px-2 py-2 animate-gradient-x transition-all">Log in</button>
                         </div>
                     </form>
                 </div>
@@ -150,8 +178,18 @@ const Login = () => {
                 </div>
 
             </div>
+            {/* ----- Notification ----- */}
+            {
+                notification.show && (
+                    <Alert
+                        onClose={() => setNotification({ ...notification, show: false })}
+                        message={notification.message}
+                        type={notification.type}
+                    />
+                )
+            }
         </div>
     )
 }
 
-export default Login;
+export default Authpage;

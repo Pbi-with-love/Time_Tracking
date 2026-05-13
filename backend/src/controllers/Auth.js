@@ -13,6 +13,7 @@ import { sendOTP } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
+import { sanitizeUser } from "../utils/sanitizeUser.js"
 
 // Register new account
 export const register = async (req, res, next) => {
@@ -116,6 +117,8 @@ export const login = async (req, res, next) => {
       $or: [{ email: loginId }, { username: loginId }],
     });
 
+    const userDetails = sanitizeUser(user);
+
     if (!user) {
       throw new AppError("Invalid credentials", 401);
     }
@@ -160,6 +163,7 @@ export const login = async (req, res, next) => {
     return res.status(200).json({
       message: "Login successful",
       accessToken,
+      user: userDetails,
     });
   } catch (err) {
     next(err);
