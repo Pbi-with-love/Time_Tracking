@@ -7,7 +7,7 @@ import { AuthContext } from "./AuthContext"
 export const TasksAndTagsContext = createContext();
 
 const TasksAndTagsContextProvider = ({ children }) => {
-    const { isAuthenticated, loading } = useContext(AuthContext);
+    const { user, loading } = useContext(AuthContext);
 
     const [tasks, setTasks] = useState([])
     const [tags, setTags] = useState([])
@@ -24,10 +24,10 @@ const TasksAndTagsContextProvider = ({ children }) => {
     }
 
     useEffect(() => {
-        if (!loading && isAuthenticated) {
+        if (!loading && user) {
             fetchData();
         }
-    }, [loading, isAuthenticated])
+    }, [loading, user])
 
     const value = {
         tasks,

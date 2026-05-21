@@ -6,6 +6,6 @@ export const getUserDetailController = async (req, res, next) => {
         const userDetails = await getUserDetailService(userId);
         return res.status(200).json({ userDetails })
     } catch (err) {
-        next(err)
+        next(err);
     }
 }

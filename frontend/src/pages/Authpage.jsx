@@ -53,13 +53,13 @@ const Authpage = () => {
                 style={{
                     boxShadow: `0 0 12px rgba(168,85,247,0.4), 0 0 24px rgba(6,182,212,0.3)`
                 }}
-                className={`relative ${bgClass} lg:w-2/3 h-3/4 text-white rounded-full flex`}
+                className={`relative flex flex-col lg:flex-row ${bgClass} w-2/3 lg:w-2/3 lg:h-3/4 text-white lg:rounded-full`}
             >
                 {/* ----- Left Side - Login ----- */}
-                <div className="absolute top-0 left-0 w-1/2 h-full p-6 xs:p-8 rounded-lg flex items-center justify-center">
+                <div className={`${showRegisterForm ? "max-lg:hidden" : ""} max-lg:order-2 w-full lg:w-1/2 lg-h-full p-6 xs:p-8 flex items-center justify-center`}>
                     <form onSubmit={handleSubmitLogin} className="flex w-[80%] flex-col gap-3">
-                        <p className="text-4xl font-medium mb-2">Login</p>
-                        <p className="text-white text-sm mb-4">Don't have an account?<span onClick={() => setShowRegisterForm(!showRegisterForm)} className="underline ml-1 cursor-pointer text-blue-300">Sign up</span></p>
+                        <p className="mb-2 text-3xl font-medium sm:text-4xl">Login</p>
+                        <p className="mb-4 text-xs leading-5 text-white sm:text-sm">Don't have an account?<span onClick={() => setShowRegisterForm(!showRegisterForm)} className="ml-1 cursor-pointer underline text-blue-300">Sign up</span></p>
                         <div className="flex flex-col gap-5">
                             <div className="flex items-center bg-neutral-800 border border-neutral-600 rounded-md px-3 focus-within:border-white transition-colors">
                                 <User className="text-neutral-400 mr-2 w-5 h-5" />
@@ -70,7 +70,7 @@ const Authpage = () => {
                                     value={loginId}
                                     onChange={(e) => setLoginId(e.target.value)}
                                     placeholder="Username or Email"
-                                    className="outline-none text-sm text-white w-full py-2"
+                                    className="w-full py-2 text-sm text-white outline-none sm:text-base"
                                 />
 
                             </div>
@@ -82,7 +82,7 @@ const Authpage = () => {
                                     value={passwordLogin}
                                     onChange={(e) => setPasswordLogin(e.target.value)}
                                     placeholder="Password"
-                                    className="outline-none text-sm text-white w-full py-2"
+                                    className="w-full py-2 text-sm text-white outline-none sm:text-base"
                                 />
                                 <button type="button" onClick={(e) => { setSeePasswordLogin(!seePasswordLogin) }}>
                                     {(seePasswordLogin) ?
@@ -90,17 +90,17 @@ const Authpage = () => {
                                     }
                                 </button>
                             </div>
-                            <button type="submit" className="mt-4 text-lg cursor-pointer bg-gradient-to-r rounded-lg from-purple-500 to-blue-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.7)] px-2 py-2 animate-gradient-x transition-all">Log in</button>
+                            <button type="submit" className="mt-4 cursor-pointer rounded-lg bg-gradient-to-r px-2 py-2 text-base from-purple-500 to-blue-500 transition-all animate-gradient-x hover:shadow-[0_0_20px_rgba(168,85,247,0.7)] sm:text-lg">Log in</button>
                         </div>
                     </form>
                 </div>
 
 
                 {/* ----- Right Side - Register ----- */}
-                <div className="absolute top-0 right-0 w-1/2 h-full p-6 xs:p-8 rounded-lg flex items-center justify-center">
+                <div className={`${showRegisterForm ? "" : "max-lg:hidden"}  max-lg:order-2 lg:w-1/2 lg:h-full p-6 xs:p-8 flex items-center justify-center`}>
                     <form className="flex w-[80%] flex-col gap-3">
-                        <p className="text-4xl font-medium mb-2">Register</p>
-                        <p className="text-white text-sm mb-4">Already have an account?<span onClick={() => setShowRegisterForm(!showRegisterForm)} className="underline ml-1 cursor-pointer text-blue-300">Login</span></p>
+                        <p className="mb-2 text-3xl font-medium sm:text-4xl">Register</p>
+                        <p className="mb-4 text-xs leading-5 text-white sm:text-sm">Already have an account?<span onClick={() => setShowRegisterForm(!showRegisterForm)} className="ml-1 cursor-pointer underline text-blue-300">Login</span></p>
                         <div className="flex flex-col gap-4">
                             <div className="flex items-center bg-neutral-800 border border-neutral-600 rounded-md px-3 focus-within:border-white transition-colors">
                                 <User className="text-neutral-400 mr-2 w-5 h-5" />
@@ -111,7 +111,7 @@ const Authpage = () => {
                                     value={usernameRegister}
                                     onChange={(e) => setUsernameRegister(e.target.value)}
                                     placeholder="Username"
-                                    className="outline-none text-sm text-white w-full py-2"
+                                    className="w-full py-2 text-sm text-white outline-none sm:text-base"
                                 />
 
                             </div>
@@ -124,7 +124,7 @@ const Authpage = () => {
                                     value={emailRegister}
                                     onChange={(e) => setEmailRegister(e.target.value)}
                                     placeholder="Email"
-                                    className="outline-none text-sm text-white w-full py-2"
+                                    className="w-full py-2 text-sm text-white outline-none sm:text-base"
                                 />
 
                             </div>
@@ -136,7 +136,7 @@ const Authpage = () => {
                                     value={passwordRegister}
                                     onChange={(e) => setPasswordRegister(e.target.value)}
                                     placeholder="Password"
-                                    className="outline-none text-sm text-white w-full py-2"
+                                    className="w-full py-2 text-sm text-white outline-none sm:text-base"
                                 />
                                 <button type="button" onClick={(e) => { setSeePasswordRegister(!seePasswordRegister) }}>
                                     {(seePasswordRegister) ?
@@ -144,13 +144,13 @@ const Authpage = () => {
                                     }
                                 </button>
                             </div>
-                            <button className="mt-4 text-lg cursor-pointer bg-gradient-to-r rounded-lg from-purple-500 to-blue-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.7)] px-2 py-2 animate-gradient-x transition-all">Sign up</button>
+                            <button className="mt-4 cursor-pointer rounded-lg bg-gradient-to-r px-2 py-2 text-base from-purple-500 to-blue-500 transition-all animate-gradient-x hover:shadow-[0_0_20px_rgba(168,85,247,0.7)] sm:text-lg">Sign up</button>
                         </div>
                     </form>
                 </div>
 
                 {/* ----- Panel ----- */}
-                <div className={`w-1/2 h-full top-0 left-0 bg-gradient-to-r flex items-center justify-center from-purple-500 to-blue-500 rounded-xl z-10 absolute overflow-hidden ${showRegisterForm ? 'translate-x-0' : 'translate-x-full'} transition-all duration-700`}>
+                <div className={`max-lg:hidden w-full p-10 max-lg:order-1 lg:w-1/2 h-1/2 lg:h-full bg-gradient-to-r flex items-center justify-center from-purple-500 to-blue-500 rounded-md lg:rounded-xl z-10 lg:absolute overflow-hidden ${showRegisterForm ? 'lg:translate-x-0' : 'lg:translate-x-full'} transition-all duration-700`}>
 
                     {/* Glow effect */}
                     <div className="absolute w-[300px] h-[300px] bg-white/20 blur-3xl rounded-full top-10 left-10"></div>
@@ -159,15 +159,15 @@ const Authpage = () => {
                     {/* Content */}
                     <div className="relative text-white text-center px-10">
 
-                        <h1 className="text-4xl font-bold mb-4">
+                        <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl">
                             Time Tracking System
                         </h1>
 
-                        <p className="text-white text-md font-medium mb-6">
+                        <p className="mb-6 text-sm leading-6 font-medium text-white sm:text-base">
                             Track your time. Analyze your productivity. Improve efficiency.
                         </p>
 
-                        <div className="flex flex-col gap-2 text-white text-sm">
+                        <div className="flex flex-col gap-2 text-xs text-white sm:text-sm">
                             <p>⏱ Task & time tracking</p>
                             <p>📊 Productivity dashboard</p>
                             <p>📅 Timestamp history</p>

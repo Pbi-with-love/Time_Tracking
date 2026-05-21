@@ -64,7 +64,7 @@ const DateTimeInput = ({ label, value, onChange }) => {
 };
 
 const Statistics = () => {
-  const { isAuthenticated, loading } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
 
     const { theme } = useContext(SettingsContext);
   const bgClass = theme === 'dark'
@@ -196,10 +196,10 @@ const Statistics = () => {
       }
     }
 
-    if (loading || !isAuthenticated) return;
+    if (loading || !user) return;
 
     fetchStatistics();
-  }, [periodOption, tasks, timestamps, tags, loading, isAuthenticated]);
+  }, [periodOption, tasks, timestamps, tags, loading, user]);
 
 
   const [isExpanded, setIsExpanded] = useState(false);

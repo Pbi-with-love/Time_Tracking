@@ -61,3 +61,13 @@ export const refreshToken = async () => {
         throw error;
     }
 }
+
+export const getProfile = async () => { 
+    try {
+        const res = await api.get(`/auth/me`);
+        return res.data;
+    } catch (error) {
+        console.error(" ", error);
+        throw error;
+    }
+}
