@@ -2,6 +2,11 @@ import React from 'react'
 import { formattedTime } from '../utils/Time'
 
 const DisplayAvg = ({ className, averageActiveTimePerDay, timeConsistency, activeDayCount, activityFrequency }) => {
+    const displayAverageTime =
+        typeof averageActiveTimePerDay === 'number' && !Number.isNaN(averageActiveTimePerDay)
+            ? formattedTime(averageActiveTimePerDay)
+            : 'None';
+
     return (
         <div className={`${className}`}>
             <div 
@@ -30,7 +35,7 @@ const DisplayAvg = ({ className, averageActiveTimePerDay, timeConsistency, activ
                 className="bg-neutral-600 rounded-lg p-4 border border-neutral-500"
             >
                 <div className="text-xs text-neutral-400">Avg Active Time Per Day</div>
-                <div className="text-lg lg:text-xl font-bold">{formattedTime(averageActiveTimePerDay)}</div>
+                <div className="text-lg lg:text-xl font-bold">{displayAverageTime}</div>
             </div>
         </div>
     )

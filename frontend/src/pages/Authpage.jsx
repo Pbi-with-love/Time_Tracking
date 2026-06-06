@@ -45,6 +45,27 @@ const Authpage = () => {
         }
     }
 
+    const handleSubmitRegister = async (e) => {
+        e.preventDefault();
+        try {
+            await authApi.register({
+                username: usernameRegister,
+                email: emailRegister,
+                password: passwordRegister
+            })
+            sessionStorage.setItem(
+                "pendingVerifyEmail",
+                emailRegister
+            );
+            navigate("/otppage", { replace: true });
+        } catch (err) {
+            const message =
+                // axios error structure
+                err.response?.data?.message ||
+                "Register failed";
+            onError(message);
+        }
+    }
 
 
     return (
@@ -98,7 +119,7 @@ const Authpage = () => {
 
                 {/* ----- Right Side - Register ----- */}
                 <div className={`${showRegisterForm ? "" : "max-lg:hidden"}  max-lg:order-2 lg:w-1/2 lg:h-full p-6 xs:p-8 flex items-center justify-center`}>
-                    <form className="flex w-[80%] flex-col gap-3">
+                    <form onSubmit={handleSubmitRegister} className="flex w-[80%] flex-col gap-3">
                         <p className="mb-2 text-3xl font-medium sm:text-4xl">Register</p>
                         <p className="mb-4 text-xs leading-5 text-white sm:text-sm">Already have an account?<span onClick={() => setShowRegisterForm(!showRegisterForm)} className="ml-1 cursor-pointer underline text-blue-300">Login</span></p>
                         <div className="flex flex-col gap-4">

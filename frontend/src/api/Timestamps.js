@@ -51,7 +51,6 @@ export const createTimestamps = async (taskId, type) => {
 
 export const createTimestampWithCustomTime = async (taskId, customTimestamp, type) => {
   try {
-    console.log({customTimestamp, taskId, type})
     const res = await api.post(`/timestamps`, {
       timestamp: customTimestamp,
       task: taskId,

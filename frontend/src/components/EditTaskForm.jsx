@@ -16,9 +16,6 @@ const EditTaskForm = ({ onClose, taskId, onSuccess, onError }) => {
 
     // Set state of multiple choice of tags
     const [selectedTags, setSelectedTags] = useState([]);
-    useEffect(() => {
-        console.log("Selected Tags:", selectedTags);
-    }, [selectedTags]);
 
     // Set original task before update
     const [originalTask, setOriginalTask] = useState(null);

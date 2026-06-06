@@ -60,8 +60,22 @@ const TaskElement_card = ({
 
   useEffect(() => {
     const fetchAvgStats = async () => {
-      const statsMap = await getTaskStats();
-      setStats(statsMap);
+      try {
+        const statsMap = await getTaskStats();
+        setStats(statsMap || {
+          averageActiveTimePerDay: {},
+          timeConsistency: {},
+          activeDayCount: {},
+          activityFrequency: {},
+        });
+      } catch {
+        setStats({
+          averageActiveTimePerDay: {},
+          timeConsistency: {},
+          activeDayCount: {},
+          activityFrequency: {},
+        });
+      }
     };
 
     fetchAvgStats();
@@ -300,9 +314,9 @@ const TaskElement_card = ({
                     <DisplayAvg
                       className={'hidden lg:grid grid-cols-2 mt-8 xl:grid-cols-4 gap-4'}
                       averageActiveTimePerDay={stats?.averageActiveTimePerDay?.[task._id] ?? "None"}
-                      timeConsistency={stats?.timeConsistency[task._id]?.level ?? "None"}
-                      activeDayCount={stats?.activeDayCount[task._id] ?? 0}
-                      activityFrequency={stats?.activityFrequency[task._id] ?? 0}
+                      timeConsistency={stats?.timeConsistency?.[task._id]?.level ?? "None"}
+                      activeDayCount={stats?.activeDayCount?.[task._id] ?? 0}
+                      activityFrequency={stats?.activityFrequency?.[task._id] ?? 0}
                     />
 
                   </div>
@@ -311,9 +325,9 @@ const TaskElement_card = ({
                 <DisplayAvg
                   className={'lg:hidden mt-4 grid grid-cols-2 gap-4 w-full'}
                   averageActiveTimePerDay={stats?.averageActiveTimePerDay?.[task._id] ?? "None"}
-                  timeConsistency={stats?.timeConsistency[task._id]?.level ?? "None"}
-                  activeDayCount={stats?.activeDayCount[task._id] ?? 0}
-                  activityFrequency={stats?.activityFrequency[task._id] ?? 0}
+                  timeConsistency={stats?.timeConsistency?.[task._id]?.level ?? "None"}
+                  activeDayCount={stats?.activeDayCount?.[task._id] ?? 0}
+                  activityFrequency={stats?.activityFrequency?.[task._id] ?? 0}
                 />
 
                 {notification.show && (

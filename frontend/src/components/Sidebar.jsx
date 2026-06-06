@@ -1,11 +1,20 @@
 import React, { useState, useContext, useEffect } from 'react'
 import Logo from './Logo'
-import { Bell, Home, Search, TrendingUp, Eye, Menu, Info, Settings } from 'lucide-react'
+import { Bell, Home, Search, TrendingUp, Eye, Menu, Info, LogOut, UserRound } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import avatar from '../assets/avatar.jpg'
 import { SettingsContext } from '../context/SettingsContext'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion as Motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { logout } from '../api/Auth'
+import Alert from '../components/Alert'
 
 const Sidebar = () => {
     const { theme } = useContext(SettingsContext);
@@ -16,12 +25,35 @@ const Sidebar = () => {
 
     const [isOpen, setIsOpen] = useState(true);
     const [activePath, setActivePath] = useState("/");
+    const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const location = useLocation();
+
+
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+    const onSuccess = (message) => setNotification({ show: true, message, type: 'success' });
+    const onError = (message) => setNotification({ show: true, message, type: 'error' });
 
 
     useEffect(() => {
         setActivePath(location.pathname);
     }, [location.pathname]);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(max-width: 868px)');
+
+        const updateViewport = (event) => {
+            setIsMobile(event.matches);
+            if (!event.matches) {
+                setIsAvatarMenuOpen(false);
+            }
+        };
+
+        setIsMobile(mediaQuery.matches);
+        mediaQuery.addEventListener('change', updateViewport);
+
+        return () => mediaQuery.removeEventListener('change', updateViewport);
+    }, []);
 
     const mainMenuItems = [
         { icon: <Home size={20} />, label: "Dashboard", path: "/" },
@@ -32,6 +64,27 @@ const Sidebar = () => {
     ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);
+    const handleAvatarMouseEnter = () => {
+        if (!isMobile) {
+            setIsAvatarMenuOpen(true);
+        }
+    };
+
+    const handleAvatarMouseLeave = () => {
+        if (!isMobile) {
+            setIsAvatarMenuOpen(false);
+        }
+    };
+
+    const handleLogout = async (e) => {
+        e.preventDefault();
+        try {
+            await logout();
+            window.location.href = "/auth";
+        } catch (error) {
+            onError('Failed to log out');
+        }
+    }
 
     return (
         <>
@@ -54,9 +107,47 @@ const Sidebar = () => {
                             <Bell className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6" />
                         </button>
 
-                        <button className='w-10 h-10 bg-neutral-700 overflow-hidden rounded-full flex items-center justify-center'>
-                            <img src={avatar} alt="" className='w-full h-full object-cover' />
-                        </button>
+                        <div
+                            className="relative"
+                            onMouseEnter={handleAvatarMouseEnter}
+                            onMouseLeave={handleAvatarMouseLeave}
+                        >
+                            <DropdownMenu
+                                open={isAvatarMenuOpen}
+                                onOpenChange={(open) => {
+                                    if (isMobile) {
+                                        setIsAvatarMenuOpen(open);
+                                    }
+                                }}
+                            >
+                                <DropdownMenuTrigger asChild>
+                                    <button className='w-10 h-10 bg-neutral-700 overflow-hidden rounded-full flex items-center justify-center cursor-pointer border border-neutral-600 hover:border-neutral-400 transition-colors'>
+                                        <img src={avatar} alt="User avatar" className='w-full h-full object-cover' />
+                                    </button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent
+                                    side="bottom"
+                                    align="end"
+                                    sideOffset={12}
+                                    className="z-1000 min-w-[190px] rounded-xl border border-neutral-700 bg-neutral-900 p-2 text-white shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
+                                >
+                                    <div className="px-3 py-2">
+                                        <p className="text-sm font-medium text-white">My account</p>
+                                        <p className="text-xs text-neutral-400">Profile shortcuts</p>
+                                    </div>
+                                    <DropdownMenuSeparator className="bg-neutral-700" />
+                                    <DropdownMenuItem className="cursor-pointer rounded-lg px-3 py-2 text-neutral-200 data-[highlighted]:bg-neutral-800 data-[highlighted]:text-white">
+                                        <UserRound className="h-4 w-4" />
+                                        <span>About me</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={handleLogout} className="cursor-pointer rounded-lg px-3 py-2 text-red-300 data-[highlighted]:bg-red-500/15 data-[highlighted]:text-red-200">
+                                        <LogOut className="h-4 w-4" />
+                                        <span>Logout</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
                 </div>
 
@@ -87,7 +178,7 @@ const Sidebar = () => {
                                     {/* 🔥 animated background */}
                                     <AnimatePresence>
                                         {activePath === item.path && (
-                                            <motion.div
+                                            <Motion.div
                                                 layoutId="sidebar-active"
                                                 className="absolute inset-0 rounded-lg bg-neutral-800"
                                                 transition={{
@@ -111,6 +202,16 @@ const Sidebar = () => {
                     </ul>
                 </nav>
             </aside>
+            {/* ----- Notification ----- */}
+            {
+                notification.show && (
+                    <Alert
+                        onClose={() => setNotification({ ...notification, show: false })}
+                        message={notification.message}
+                        type={notification.type}
+                    />
+                )
+            }
         </>
     )
 }

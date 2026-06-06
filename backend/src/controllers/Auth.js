@@ -74,6 +74,8 @@ export const register = async (req, res, next) => {
 export const verify = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
+    console.log("verify email: ", email);
+    console.log("verify otp: ", otp);
 
     const validOTP = await verifyOTP(email, otp);
     if (!validOTP) {
