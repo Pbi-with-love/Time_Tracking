@@ -4,8 +4,10 @@ import { User, Lock, Eye, EyeOff, Mail } from 'lucide-react'
 import { useNavigate } from "react-router-dom";
 import Alert from '../components/Alert'
 import * as authApi from "../api/Auth"
+import { AuthContext } from "../context/AuthContext";
 const Authpage = () => {
     const { theme } = useContext(SettingsContext);
+    const { login } = useContext(AuthContext);
 
     const navigate = useNavigate();
     const bgClass = theme === 'dark'
@@ -30,7 +32,7 @@ const Authpage = () => {
     const handleSubmitLogin = async (e) => {
         e.preventDefault();
         try {
-            await authApi.login({
+            await login({
                 loginId,
                 password: passwordLogin
             });

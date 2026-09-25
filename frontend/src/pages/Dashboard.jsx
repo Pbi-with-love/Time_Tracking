@@ -31,7 +31,7 @@ const Dashboard = () => {
         accent: 'bg-gradient-to-b from-purple-400 to-cyan-400'
     }
 
-    const { tasks, tags, setTasks, setTags, fetchData, timestamps, setTimestamps } = useContext(TasksAndTagsContext)
+    const { tasks, tags, setTasks, setTags, fetchData, timestamps, setTimestamps, dataLoading } = useContext(TasksAndTagsContext)
 
     // Open create task/tag form
     const [openCreateNewForm, setOpenCreateNewForm] = useState(false);

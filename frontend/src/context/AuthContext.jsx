@@ -25,11 +25,11 @@ const AuthContextProvider = ({ children }) => {
         initAuth();
     }, [])
 
-    const login = async (loginId, password) => {
-        const res = await authApi.login({loginId, password});
+    const login = async ({ loginId, password }) => {
+        const res = await authApi.login({ loginId, password });
         setUser(res.user);
-    }
-    
+    };
+
     const logout = async () => {
         await authApi.logout();
         setUser(null)

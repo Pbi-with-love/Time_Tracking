@@ -9,18 +9,33 @@ export const TasksAndTagsContext = createContext();
 const TasksAndTagsContextProvider = ({ children }) => {
     const { user, loading } = useContext(AuthContext);
 
+    const [dataLoading, setDataLoading] = useState(false);
     const [tasks, setTasks] = useState([])
     const [tags, setTags] = useState([])
     const [timestamps, setTimestamps] = useState([])
 
 
     const fetchData = async () => {
-        const tasksData = await getAllTasks();
-        const tagsData = await getAllTags();
-        const timestampsData = await getAllTimestamps();
-        setTasks(tasksData);
-        setTags(tagsData);
-        setTimestamps(timestampsData);
+        try {
+            setDataLoading(true);
+
+            const [tasksData, tagsData, timestampsData] =
+                await Promise.all([
+                    getAllTasks(),
+                    getAllTags(),
+                    getAllTimestamps(),
+                ]);
+
+            setTasks(tasksData);
+            setTags(tagsData);
+            setTimestamps(timestampsData);
+
+        } catch (err) {
+            console.error(err);
+        }
+        finally {
+            setDataLoading(false);
+        }
     }
 
     useEffect(() => {
@@ -37,6 +52,7 @@ const TasksAndTagsContextProvider = ({ children }) => {
         timestamps,
         setTimestamps,
         fetchData,
+        dataLoading
     };
 
     return (
