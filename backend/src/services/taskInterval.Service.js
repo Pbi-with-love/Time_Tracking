@@ -7,15 +7,19 @@ import {
 import { getAllTimestampsCached, getTimestampsCachedByMultipleIds } from "./cache/timestampCache.Service.js"
 import { getTaskCached } from "./cache/taskCache.Service.js";
 import Timestamp from "../models/Timestamp.js";
+import mongoose from "mongoose";
+import { AppError } from "../utils/AppError.js";
+
 // Get tasks with active time within a given start and end interval
-export const getTasksOfInterest = async ({ start, end }) => {
+export const getTasksOfInterest = async ({ userId, start, end }) => {
   const { taskTotalsTs } = await totalTimeActiveForAllTask({
+    userId,
     startTime: start,
     endTime: end,
   });
 
   const taskIds = Object.keys(taskTotalsTs);
-  const tasks = await getTasksCachedByMultipleIds([...taskIds]);
+  const tasks = await getTasksCachedByMultipleIds(userId, [...taskIds]);
 
   const tasksWithActiveTime = tasks.map((task) => ({
     ...task,
@@ -26,9 +30,12 @@ export const getTasksOfInterest = async ({ start, end }) => {
 };
 
 // Get tasks daily active time for bar chart visualization
-export const getTaskDailyBarChart = async ({ taskId, startTime, endTime }) => {
-  const task = await getTaskCached(taskId);
+export const getTaskDailyBarChart = async ({ userId, taskId, startTime, endTime }) => {
+  const task = await getTaskCached(userId, taskId);
+  if (!task) throw new AppError("Task not found", 404);
+
   const totalPerDay = await totalTimeActiveForEachTaskDaily({
+    userId,
     taskId,
     startTime,
     endTime,
@@ -50,10 +57,11 @@ export const getTaskDailyBarChart = async ({ taskId, startTime, endTime }) => {
 };
 
 
-export const getTaskStats = async () => {
+export const getTaskStats = async (userId) => {
   // Stat 1: The ratio number of ts type start for a specific task and the number of total ts type start of all tasks
+  // aggregate() bypasses Mongoose casting, so the owner id is cast explicitly
   const activityFrequencyData = await Timestamp.aggregate([
-    { $match: { type: "start" } },
+    { $match: { user: new mongoose.Types.ObjectId(userId), type: "start" } },
     {
       $facet: {
         perTask: [
@@ -107,7 +115,7 @@ export const getTaskStats = async () => {
   });
 
   
-  const timestamps = await getAllTimestampsCached();
+  const timestamps = await getAllTimestampsCached(userId);
   const tsWithoutEnd = new Set();
   const totalTime = {};
   const activeDays = {}; // activeDay is an obj for each element is a set of day that a task (taskId) is active at least 1 time
@@ -140,7 +148,7 @@ export const getTaskStats = async () => {
   }
 
   if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([...tsWithoutEnd]);
+    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds(userId, [...tsWithoutEnd]);
     const now = new Date();
     for (const ts of unfinishedTimestamps) {
       const startTs = new Date(ts.timestamp);
@@ -205,9 +213,12 @@ export const getTaskStats = async () => {
 }
 
 // Get detailed activity intervals for a specific task within a time range
-export const getTaskDetailsIntervals = async ({startTime, endTime, taskId}) => {
-  const task = await getTaskCached(taskId);
+export const getTaskDetailsIntervals = async ({userId, startTime, endTime, taskId}) => {
+  const task = await getTaskCached(userId, taskId);
+  if (!task) throw new AppError("Task not found", 404);
+
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     taskId,
     startTime,
     endTime,
@@ -239,9 +250,10 @@ export const getTaskDetailsIntervals = async ({startTime, endTime, taskId}) => {
     }
   }
   if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([
-      ...tsWithoutEnd,
-    ]);
+    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds(
+      userId,
+      [...tsWithoutEnd],
+    );
 
     for (const ts of unfinishedTimestamps) {
       let originalTsTime = new Date(ts.timestamp);

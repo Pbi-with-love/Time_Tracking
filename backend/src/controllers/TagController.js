@@ -9,7 +9,7 @@ import {
 // GET all tags
 export const getAllTags = async (req, res) => {
   try {
-    const tags = await getAllTagCached();
+    const tags = await getAllTagCached(req.user.id);
     res.status(200).json(tags);
   } catch (error) {
     res
@@ -21,7 +21,7 @@ export const getAllTags = async (req, res) => {
 // GET tag by ID
 export const getTagById = async (req, res) => {
   try {
-    const tag = await getTagCached(req.params.id);
+    const tag = await getTagCached(req.user.id, req.params.id);
     if (!tag) return res.status(404).json({ error: "Tag not found" });
     res.status(200).json(tag);
   } catch (err) {
@@ -32,7 +32,10 @@ export const getTagById = async (req, res) => {
 // CREATE tag
 export const createTag = async (req, res) => {
   try {
-    const newTag = await createTagCached(req.body);
+    // Whitelist the stored fields — `user` is set from the authenticated
+    // request, never from the body
+    const { title, description } = req.body;
+    const newTag = await createTagCached(req.user.id, { title, description });
     res.status(201).json(newTag);
   } catch (error) {
     res
@@ -44,7 +47,17 @@ export const createTag = async (req, res) => {
 // UPDATE tag
 export const updateTag = async (req, res) => {
   try {
-    const updatedTag = await updateTagCached(req.params.id, req.body);
+    // Whitelist the updatable fields — `user` must never come from the body
+    const { title, description } = req.body;
+    const updatedData = {};
+    if (title !== undefined) updatedData.title = title;
+    if (description !== undefined) updatedData.description = description;
+
+    const updatedTag = await updateTagCached(
+      req.user.id,
+      req.params.id,
+      updatedData,
+    );
     if (!updatedTag) {
       return res.status(404).json({ message: "Tag not found" });
     }
@@ -59,7 +72,7 @@ export const updateTag = async (req, res) => {
 // DELETE tag
 export const deleteTag = async (req, res) => {
   try {
-    const deletedTag = await deleteTagCached(req.params.id);
+    const deletedTag = await deleteTagCached(req.user.id, req.params.id);
     if (!deletedTag) {
       return res.status(404).json({ message: "Tag not found" });
     }

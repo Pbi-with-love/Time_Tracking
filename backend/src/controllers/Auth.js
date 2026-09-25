@@ -5,7 +5,7 @@ import {
   saveOTP,
   verifyOTP,
   deleteOTP,
-} from "../services/cache/otpCache.Service.js";
+} from "../services/cache/otpCache.service.js";
 import { refreshTokenKey } from "../utils/redisKey.js";
 import { AppError } from "../utils/AppError.js";
 import User from "../models/User.js";

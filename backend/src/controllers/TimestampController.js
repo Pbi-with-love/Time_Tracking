@@ -16,7 +16,7 @@ import { AppError } from "../utils/AppError.js";
 // GET all timestamps
 export const getAllTimestamps = async (req, res, next) => {
   try {
-    const timestamps = await getAllTimestampsCached();
+    const timestamps = await getAllTimestampsCached(req.user.id);
     res.status(200).json(timestamps);
   } catch (err) {
     next(err);
@@ -26,7 +26,7 @@ export const getAllTimestamps = async (req, res, next) => {
 // GET timestamp by ID
 export const getTimestampById = async (req, res, next) => {
   try {
-    const ts = await getTimestampCached(req.params.id);
+    const ts = await getTimestampCached(req.user.id, req.params.id);
     if (!ts) throw new AppError("Timestamp not found", 404);
     res.status(200).json(ts);
   } catch (err) {
@@ -38,7 +38,9 @@ export const getTimestampsForTask = async (req, res, next) => {
   try {
     const { taskId, type } = req.params;
 
-    const filter = { task: taskId };
+    // Timestamps carry their owner, so a task belonging to someone else
+    // simply yields no rows
+    const filter = { user: req.user.id, task: taskId };
     if (type) filter.type = type;
 
     const timestamps = await Timestamp.find(filter).populate("startRef").lean();
@@ -55,12 +57,13 @@ export const createTimestamp = async (req, res, next) => {
     const { task, type, timestamp } = req.body;
 
     const validatedTimestamp = await timestampCreateValidate({
+      userId: req.user.id,
       task,
       type,
       timestamp,
     });
 
-    const newTs = await createTimestampCached(validatedTimestamp);
+    const newTs = await createTimestampCached(req.user.id, validatedTimestamp);
 
     res.status(201).json(newTs);
   } catch (err) {
@@ -77,7 +80,7 @@ export const updateTimestamp = async (req, res, next) => {
       throw new AppError("Invalid timestamp", 400);
     }
 
-    const updatedTs = await updateTimestampCached(req.params.id, {
+    const updatedTs = await updateTimestampCached(req.user.id, req.params.id, {
       timestamp,
     });
 
@@ -91,7 +94,7 @@ export const updateTimestamp = async (req, res, next) => {
 // DELETE timestamp
 export const deleteTimestamp = async (req, res, next) => {
   try {
-    const deletedTs = await deleteTimestampCached(req.params.id);
+    const deletedTs = await deleteTimestampCached(req.user.id, req.params.id);
     if (!deletedTs) throw new AppError("Timestamp not found", 404);
     res.status(204).send();
   } catch (err) {

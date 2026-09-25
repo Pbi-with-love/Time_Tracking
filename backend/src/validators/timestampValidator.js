@@ -3,14 +3,15 @@ import mongoose from "mongoose";
 import { getTaskCached } from "../services/cache/taskCache.Service.js";
 import { AppError } from "../utils/AppError.js";
 
-export const timestampCreateValidate = async ({ task, type, timestamp }) => {
+export const timestampCreateValidate = async ({ userId, task, type, timestamp }) => {
     if (!task || !type) throw new AppError("Missing field", 400);
 
   if (!mongoose.Types.ObjectId.isValid(task)) {
     throw new AppError("Invalid task ID", 400);
   }
 
-  const taskExists = await getTaskCached(task);
+  // Scoped to the caller: another user's task id resolves to null here
+  const taskExists = await getTaskCached(userId, task);
   if (!taskExists) {
     throw new AppError("Task not found", 404);
   }
@@ -26,10 +27,12 @@ export const timestampCreateValidate = async ({ task, type, timestamp }) => {
 
   if (type === "end") {
     lastStart = await Timestamp.findOne({
+      user: userId,
       task,
       type: "start",
       _id: {
         $nin: await Timestamp.distinct("startRef", {
+          user: userId,
           startRef: { $ne: null },
         }),
       },
@@ -54,11 +57,11 @@ export const timestampCreateValidate = async ({ task, type, timestamp }) => {
 };
 
 
-export const timestampUpdateValidate = async ({ task, type, timestamp }) => {
+export const timestampUpdateValidate = async ({ userId, task, type, timestamp }) => {
   const updateData = {};
   if (task) {
     if (!mongoose.Types.ObjectId.isValid(task)) throw new AppError("Invalid task ID", 400);
-    const taskExists = await getTaskCached(task);
+    const taskExists = await getTaskCached(userId, task);
     if (!taskExists) throw new AppError("Task not found", 404);
     updateData.task = task;
   }

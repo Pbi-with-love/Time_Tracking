@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
-dotenv.config()
+dotenv.config();
 
 export const sendOTP = async (email, otp) => {
   const transporter = nodemailer.createTransport({
@@ -12,8 +12,8 @@ export const sendOTP = async (email, otp) => {
     },
   });
 
-  await transporter.sendMail({
-    from: "no-reply@timetracking.com",
+  const info = await transporter.sendMail({
+    from: process.env.EMAIL,
     to: email,
     subject: "Your OTP Code",
     text: `Your OTP is: ${otp}`,

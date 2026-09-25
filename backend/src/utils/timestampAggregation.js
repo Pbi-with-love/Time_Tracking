@@ -1,7 +1,7 @@
 import { getTimestampsCachedByMultipleIds } from "../services/cache/timestampCache.Service.js";
 
 // Utility functions to aggregate timestamp durations for a specific set of timestamps
-export const sumTimestampDurations = async ({ timestamps, start, end }) => {
+export const sumTimestampDurations = async ({ userId, timestamps, start, end }) => {
   let total = 0;
   const taskTotalsTs = {};
 
@@ -23,7 +23,7 @@ export const sumTimestampDurations = async ({ timestamps, start, end }) => {
   }
 
   if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([...tsWithoutEnd]);
+    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds(userId, [...tsWithoutEnd]);
 
     for (const ts of unfinishedTimestamps) {
       let tsTime = new Date(ts.timestamp < start ? start : ts.timestamp);
@@ -38,7 +38,7 @@ export const sumTimestampDurations = async ({ timestamps, start, end }) => {
 
 
 // caculate total active daily time per day for a specific input set of timestamps
-export const accumulateDailyTime = async ({ timestamps, start, end }) => {
+export const accumulateDailyTime = async ({ userId, timestamps, start, end }) => {
   const totalPerDay = {};
 
   const tsWithoutEnd = new Set();
@@ -94,12 +94,14 @@ export const accumulateDailyTime = async ({ timestamps, start, end }) => {
   }
 
   if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([...tsWithoutEnd]);
+    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds(userId, [...tsWithoutEnd]);
 
     for (const ts of unfinishedTimestamps) {
-      let startTs = new Date(
-        t.startRef.timestamp < start ? start : t.startRef.timestamp,
-      );
+      // An unfinished start runs from its own timestamp up to the end of the
+      // queried range. (This previously read `t.startRef`, an out-of-scope
+      // reference to the loop above, which threw as soon as any interval in
+      // range was still open.)
+      let startTs = new Date(ts.timestamp < start ? start : ts.timestamp);
       let endTs = end;
 
       let startDay = new Date(

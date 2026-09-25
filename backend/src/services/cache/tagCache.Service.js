@@ -2,28 +2,28 @@ import redis from "../../config/redisClient.js";
 import Tag from "../../models/Tag.js";
 import { tagKey, allTagsKey } from "../../utils/redisKey.js";
 
-export const getTagCached = async (tagId) => {
-  const tagCached = await redis.get(tagKey(tagId));
+export const getTagCached = async (userId, tagId) => {
+  const tagCached = await redis.get(tagKey(userId, tagId));
 
   if (tagCached) {
     return JSON.parse(tagCached);
   }
 
-  const tag = await Tag.findById(tagId).lean();
+  const tag = await Tag.findOne({ _id: tagId, user: userId }).lean();
   if (!tag) return null;
 
-  await redis.set(tagKey(tagId), JSON.stringify(tag), { EX: 300 });
+  await redis.set(tagKey(userId, tagId), JSON.stringify(tag), { EX: 300 });
 
   return tag;
 };
 
-export const getTagsCachedByMultipleIds = async (tagIds) => {
+export const getTagsCachedByMultipleIds = async (userId, tagIds) => {
   if (tagIds.length === 0) return [];
 
   const missingIds = [];
   const map = new Map();
 
-  const key = tagIds.map((id) => tagKey(id));
+  const key = tagIds.map((id) => tagKey(userId, id));
   const cachedRaw = await redis.mGet(key);
 
   cachedRaw.forEach((cache, index) => {
@@ -34,7 +34,8 @@ export const getTagsCachedByMultipleIds = async (tagIds) => {
 
   if (missingIds.length > 0) {
     const missingTags = await Tag.find({
-      _id: { $in: missingIds } 
+      _id: { $in: missingIds },
+      user: userId,
     }).lean();
 
     for (const tag of missingTags) {
@@ -43,7 +44,7 @@ export const getTagsCachedByMultipleIds = async (tagIds) => {
     }
     await Promise.all(
       missingTags.map((t) => {
-        redis.set(tagKey(t._id.toString()), JSON.stringify(t), {
+        redis.set(tagKey(userId, t._id.toString()), JSON.stringify(t), {
           EX: 300
         })
       })
@@ -53,44 +54,12 @@ export const getTagsCachedByMultipleIds = async (tagIds) => {
   return tagIds.map((id) => map.get(id.toString())).filter(Boolean);
 }
 
-// export const getTasksCachedByMultipleIds = async (taskIds) => {
-//   if (taskIds.length === 0) return [];
-
-//   const res = [];
-//   const missingIds = [];
-
-//   const key = taskIds.map((id) => taskKey(id));
-//   const cachedRaw = await redis.mGet(key);
-
-//   cachedRaw.forEach((cache, index) => {
-//     if (cache) res.push(JSON.parse(cache));
-//     else missingIds.push(taskIds[index]);
-//   })
-
-//   if (missingIds.length > 0) {
-//     const missingTasks = await Task.find({
-//       _id: { $in: missingIds },
-//     }).lean();
-
-//     res.push(...missingTasks);
-//     await Promise.all(
-//       missingTasks.map((t) => {
-//         redis.set(taskKey(t._id.toString()), JSON.stringify(t), {
-//           EX: 300
-//         })
-//       })
-//     )
-//   }
-
-//   return res;
-// };
-
-export const getAllTagCached = async () => {
-  const allTagCached = await redis.get(allTagsKey());
+export const getAllTagCached = async (userId) => {
+  const allTagCached = await redis.get(allTagsKey(userId));
 
   if (allTagCached) {
     const ids = JSON.parse(allTagCached);
-    const keys = ids.map((id) => tagKey(id));
+    const keys = ids.map((id) => tagKey(userId, id));
 
     if (!ids.length) {
       return [];
@@ -110,12 +79,17 @@ export const getAllTagCached = async () => {
     });
 
     if (missingIds.length > 0) {
-      const missingTags = await Tag.find({ _id: { $in: missingIds } }).lean();
+      const missingTags = await Tag.find({
+        _id: { $in: missingIds },
+        user: userId,
+      }).lean();
 
       tagsCache.push(...missingTags);
       await Promise.all(
         missingTags.map((t) =>
-          redis.set(tagKey(t._id.toString()), JSON.stringify(t), { EX: 300 })
+          redis.set(tagKey(userId, t._id.toString()), JSON.stringify(t), {
+            EX: 300,
+          })
         )
       );
     }
@@ -123,57 +97,63 @@ export const getAllTagCached = async () => {
     return tagsCache;
   }
 
-  const tags = await Tag.find().lean();
+  const tags = await Tag.find({ user: userId }).lean();
   const ids = tags.map((tag) => tag._id.toString());
 
-  await redis.set(allTagsKey(), JSON.stringify(ids), { EX: 300 });
+  await redis.set(allTagsKey(userId), JSON.stringify(ids), { EX: 300 });
 
   for (const tag of tags) {
-    await redis.set(tagKey(tag._id), JSON.stringify(tag), { EX: 300 });
+    await redis.set(tagKey(userId, tag._id), JSON.stringify(tag), { EX: 300 });
   }
 
   return tags;
 };
 
-export const createTagCached = async (data) => {
-  const newTag = new Tag(data);
+export const createTagCached = async (userId, data) => {
+  // `user` is set here rather than from the request body, so ownership
+  // can never be spoofed by the client
+  const newTag = new Tag({ ...data, user: userId });
   await newTag.save();
 
   const plainTag = newTag.toObject();
 
   // Invalidate cache
-  await redis.del(allTagsKey());
-  await redis.set(tagKey(plainTag._id.toString()), JSON.stringify(plainTag), {
+  await redis.del(allTagsKey(userId));
+  await redis.set(tagKey(userId, plainTag._id.toString()), JSON.stringify(plainTag), {
     EX: 300,
   });
 
   return plainTag;
 };
 
-export const updateTagCached = async (tagId, updatedData) => {
-  const updatedTag = await Tag.findByIdAndUpdate(tagId, updatedData, {
-    new: true,
-    runValidators: true,
-  });
+export const updateTagCached = async (userId, tagId, updatedData) => {
+  const updatedTag = await Tag.findOneAndUpdate(
+    { _id: tagId, user: userId },
+    updatedData,
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
 
   if (!updatedTag) return null;
 
   const plainTag = updatedTag.toObject();
 
   // Invalidate cache
-  await redis.del(allTagsKey());
-  await redis.set(tagKey(tagId), JSON.stringify(plainTag), { EX: 300 });
+  await redis.del(allTagsKey(userId));
+  await redis.set(tagKey(userId, tagId), JSON.stringify(plainTag), { EX: 300 });
 
   return plainTag;
 };
 
-export const deleteTagCached = async (tagId) => {
-  const deletedTag = await Tag.findByIdAndDelete(tagId);
+export const deleteTagCached = async (userId, tagId) => {
+  const deletedTag = await Tag.findOneAndDelete({ _id: tagId, user: userId });
   if (!deletedTag) return null;
 
   // Invalidate cache
-  await redis.del(tagKey(tagId));
-  await redis.del(allTagsKey());
+  await redis.del(tagKey(userId, tagId));
+  await redis.del(allTagsKey(userId));
 
   return deletedTag;
 };

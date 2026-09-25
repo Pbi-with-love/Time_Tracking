@@ -17,6 +17,7 @@ import mongoose from "mongoose";
 
 // Retrieve timestamps based on period or custom time range
 export const getTimestampsByPeriod = async ({
+  userId,
   period,
   startTime,
   endTime,
@@ -63,6 +64,7 @@ export const getTimestampsByPeriod = async ({
    * The last case is if you have a end ts valid but the start ts is not valid (not exist in the result of the query), then you need to remove this end ts because this end ts is not in range (start end startTs endTs)
    */
   const query = {
+    user: userId,
     $or: [
       { type: "end", timestamp: { $gte: start } },
 
@@ -100,6 +102,7 @@ export const getTimestampsByPeriod = async ({
       (id) => new mongoose.Types.ObjectId(id),
     );
     const alreadyFinishedTimestamp = await Timestamp.find({
+      user: userId,
       type: "end",
       startRef: { $in: ids },
     }).lean();
@@ -125,6 +128,7 @@ export const getTimestampsByPeriod = async ({
 
 // Calculate total active time for a specific task
 export const totalTimeActiveForEachTask = async ({
+  userId,
   taskId,
   period,
   startTime,
@@ -137,11 +141,13 @@ export const totalTimeActiveForEachTask = async ({
     timeRange = { period };
   }
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     taskId,
     ...timeRange,
   });
 
   const { total, taskTotalsTs } = await sumTimestampDurations({
+    userId,
     timestamps,
     start,
     end,
@@ -152,6 +158,7 @@ export const totalTimeActiveForEachTask = async ({
 
 // Calculate total active time for all tasks
 export const totalTimeActiveForAllTask = async ({
+  userId,
   period,
   startTime,
   endTime,
@@ -163,10 +170,12 @@ export const totalTimeActiveForAllTask = async ({
     timeRange = { period };
   }
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     ...timeRange,
   });
 
   const { total, taskTotalsTs } = await sumTimestampDurations({
+    userId,
     timestamps,
     start,
     end,
@@ -176,41 +185,56 @@ export const totalTimeActiveForAllTask = async ({
 
 // Calculate total active time for each day for a specific task
 export const totalTimeActiveForEachTaskDaily = async ({
+  userId,
   taskId,
   period,
   startTime,
   endTime,
 } = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     taskId,
     period,
     startTime,
     endTime,
   });
 
-  const totalPerDay = await accumulateDailyTime({ timestamps, start, end });
+  const totalPerDay = await accumulateDailyTime({
+    userId,
+    timestamps,
+    start,
+    end,
+  });
 
   return totalPerDay;
 };
 
 export const totalTimeActiveForAllTasksDaily = async ({
+  userId,
   period,
   startTime,
   endTime,
 } = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     period,
     startTime,
     endTime,
   });
 
-  const totalPerDay = await accumulateDailyTime({ timestamps, start, end });
+  const totalPerDay = await accumulateDailyTime({
+    userId,
+    timestamps,
+    start,
+    end,
+  });
 
   return totalPerDay;
 };
 
-export const totalTimeActiveForAllTasksPerHour = async () => {
+export const totalTimeActiveForAllTasksPerHour = async ({ userId } = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     period: "today",
   });
 
@@ -245,9 +269,10 @@ export const totalTimeActiveForAllTasksPerHour = async () => {
   }
 
   if (tsWithoutEnd.size > 0) {
-    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds([
-      ...tsWithoutEnd,
-    ]);
+    const unfinishedTimestamps = await getTimestampsCachedByMultipleIds(
+      userId,
+      [...tsWithoutEnd],
+    );
 
     for (const ts of unfinishedTimestamps) {
       let tsTime = new Date(ts.timestamp < start ? start : ts.timestamp);
@@ -271,18 +296,20 @@ export const totalTimeActiveForAllTasksPerHour = async () => {
 
 // Calculate total active time for each tag
 export const totalTimeActiveForEachTag = async ({
+  userId,
   period,
   startTime,
   endTime,
 } = {}) => {
   const { taskTotalsTs } = await totalTimeActiveForAllTask({
+    userId,
     period,
     startTime,
     endTime,
   });
 
   const taskIds = Object.keys(taskTotalsTs);
-  const tasks = await getTasksCachedByMultipleIds([...taskIds]);
+  const tasks = await getTasksCachedByMultipleIds(userId, [...taskIds]);
   const tagTotals = {};
   const numberOfTasks = {};
 
@@ -301,6 +328,7 @@ export const totalTimeActiveForEachTag = async ({
 
 // Get the day with the most completed tasks in a period
 export const getMostProductive = async ({
+  userId,
   period,
   startTime,
   endTime,
@@ -308,6 +336,7 @@ export const getMostProductive = async ({
   if (period === "today") return { day: null, count: 0 };
 
   const { timestamps } = await getTimestampsByPeriod({
+    userId,
     period,
     startTime,
     endTime,
@@ -356,11 +385,13 @@ export const getMostProductive = async ({
  * For example S1 -> S2 -> S3 -> E1 -> E3 -> E2 have 3 startTs which means the number of task active in this streak is currentStreakTasks.size == 3
  */
 export const getMostActiveStreak = async ({
+  userId,
   period,
   startTime,
   endTime,
 } = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     period,
     startTime,
     endTime,
@@ -412,11 +443,13 @@ export const getMostActiveStreak = async ({
 };
 
 export const getTaskStartStats = async ({
+  userId,
   period,
   startTime,
   endTime,
 } = {}) => {
   const { timestamps, start, end } = await getTimestampsByPeriod({
+    userId,
     period,
     startTime,
     endTime,
@@ -446,11 +479,12 @@ export const getTaskStartStats = async ({
 
 // Check if a new interval overlaps with existing intervals for a task before create new interval
 export const checkNewIntervalOverlap = async ({
+  userId,
   startTime,
   endTime,
   taskId,
 } = {}) => {
-  const timestamps = await Timestamp.find({ task: taskId })
+  const timestamps = await Timestamp.find({ user: userId, task: taskId })
     .sort({ timestamp: 1 })
     .lean();
 

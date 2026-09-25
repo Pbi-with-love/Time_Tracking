@@ -11,6 +11,9 @@ export const getOrderedTasks = async (req, res, next) => {
     const statuses = await Timestamp.aggregate([
       {
         $match: {
+          // Scoping by owner means client-supplied ids belonging to another
+          // user simply never match
+          user: new mongoose.Types.ObjectId(req.user.id),
           task: { $in: objectIdTaskIds },
         },
       },

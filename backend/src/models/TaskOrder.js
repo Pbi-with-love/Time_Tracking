@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const taskOrderSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   scope: {
     type: String,
     enum: ["default", "earliest", "latest"],
@@ -21,6 +26,7 @@ const taskOrderSchema = new mongoose.Schema({
   ],
 });
 
-taskOrderSchema.index({ scope: 1, tags: 1 }, { unique: true });
+// One saved order per (owner, scope, tag set)
+taskOrderSchema.index({ user: 1, scope: 1, tags: 1 }, { unique: true });
 
 export default mongoose.model("TaskOrder", taskOrderSchema);
